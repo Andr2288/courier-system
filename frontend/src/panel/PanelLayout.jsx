@@ -29,6 +29,9 @@ export default function PanelLayout() {
               <NavLink to="/panel/couriers" className={navClass}>
                 Кур’єри
               </NavLink>
+              <NavLink to="/panel/shipments" className={navClass}>
+                Відправлення
+              </NavLink>
               <NavLink to="/panel/tariffs" className={navClass}>
                 Тарифи
               </NavLink>

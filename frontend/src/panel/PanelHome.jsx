@@ -9,7 +9,7 @@ export default function PanelHome() {
     <div>
       <h1 className="text-2xl font-semibold text-ink">Панель диспетчера</h1>
       <p className="mt-1 text-sm text-ink-muted">
-        Довідники та відправлення (наступні кроки). Зараз доступні клієнти, кур’єри та перегляд тарифів.
+        Довідники, відправлення з трек-кодом та тарифікація. Далі — призначення кур’єра та публічне відстеження.
       </p>
 
       <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
@@ -26,7 +26,13 @@ export default function PanelHome() {
         </dl>
       </section>
 
-      <section className="mt-6 grid gap-3 sm:grid-cols-3">
+      <section className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Link
+          to="/panel/shipments"
+          className="rounded-xl border border-slate-200 bg-white p-4 text-sm font-medium text-brand-700 shadow-sm hover:border-brand-200"
+        >
+          Відправлення →
+        </Link>
         <Link
           to="/panel/clients"
           className="rounded-xl border border-slate-200 bg-white p-4 text-sm font-medium text-brand-700 shadow-sm hover:border-brand-200"

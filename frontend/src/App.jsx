@@ -9,6 +9,7 @@ import PanelLayout from './panel/PanelLayout.jsx';
 import ClientsPage from './panel/ClientsPage.jsx';
 import CouriersPage from './panel/CouriersPage.jsx';
 import PanelHome from './panel/PanelHome.jsx';
+import ShipmentsPage from './panel/ShipmentsPage.jsx';
 import TariffsPage from './panel/TariffsPage.jsx';
 
 export default function App() {
@@ -32,6 +33,7 @@ export default function App() {
               <Route index element={<PanelHome />} />
               <Route path="clients" element={<ClientsPage />} />
               <Route path="couriers" element={<CouriersPage />} />
+              <Route path="shipments" element={<ShipmentsPage />} />
               <Route path="tariffs" element={<TariffsPage />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />

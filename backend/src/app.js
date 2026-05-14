@@ -5,6 +5,7 @@ import { config } from './config.js';
 import authRouter from './routes/auth.js';
 import clientsRouter from './routes/clients.js';
 import couriersRouter from './routes/couriers.js';
+import shipmentsRouter from './routes/shipments.js';
 import tariffsRouter from './routes/tariffs.js';
 
 export function createApp() {
@@ -25,6 +26,7 @@ export function createApp() {
   app.use('/api/auth', authRouter);
   app.use('/api/clients', clientsRouter);
   app.use('/api/couriers', couriersRouter);
+  app.use('/api/shipments', shipmentsRouter);
   app.use('/api/tariffs', tariffsRouter);
 
   app.use((req, res, next) => {
