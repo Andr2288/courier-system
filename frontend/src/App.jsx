@@ -1,7 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 
 import SiteHeader from './components/SiteHeader.jsx';
-import { RequireAuth, SessionProvider } from './context/SessionContext.jsx';
+import { AuthGate, SessionProvider } from './context/SessionContext.jsx';
 import HomePage from './pages/HomePage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import TrackingPage from './pages/TrackingPage.jsx';
@@ -20,18 +20,23 @@ export default function App() {
         <div className="min-h-screen">
           <SiteHeader />
           <Routes>
+            <Route path="/" element={<HomePage />} />
             <Route path="/login" element={<LoginPage />} />
-            <Route element={<RequireAuth />}>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/track" element={<TrackingPage />} />
-              <Route path="/panel" element={<PanelLayout />}>
-                <Route index element={<PanelHome />} />
-                <Route path="clients" element={<ClientsPage />} />
-                <Route path="couriers" element={<CouriersPage />} />
-                <Route path="shipments" element={<ShipmentsPage />} />
-                <Route path="tariffs" element={<TariffsPage />} />
-                <Route path="analytics" element={<AnalyticsPage />} />
-              </Route>
+            <Route path="/track" element={<TrackingPage />} />
+            <Route
+              path="/panel"
+              element={
+                <AuthGate>
+                  <PanelLayout />
+                </AuthGate>
+              }
+            >
+              <Route index element={<PanelHome />} />
+              <Route path="clients" element={<ClientsPage />} />
+              <Route path="couriers" element={<CouriersPage />} />
+              <Route path="shipments" element={<ShipmentsPage />} />
+              <Route path="tariffs" element={<TariffsPage />} />
+              <Route path="analytics" element={<AnalyticsPage />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

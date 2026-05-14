@@ -6,7 +6,7 @@ import {
   useMemo,
   useState,
 } from 'react';
-import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 
 import { meRequest } from '../api.js';
 import { clearToken, getToken, setToken, subscribeSessionCleared } from '../authStorage.js';
@@ -92,8 +92,7 @@ export function useSession() {
   return ctx;
 }
 
-/** Усі вкладені маршрути — лише для авторизованого користувача (крім батьківського /login). */
-export function RequireAuth() {
+export function AuthGate({ children }) {
   const location = useLocation();
   const { user, loading } = useSession();
 
@@ -115,5 +114,5 @@ export function RequireAuth() {
     );
   }
 
-  return <Outlet />;
+  return children;
 }
