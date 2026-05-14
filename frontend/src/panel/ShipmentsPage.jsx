@@ -167,73 +167,76 @@ export default function ShipmentsPage() {
         </p>
       ) : null}
 
-      <section className="mt-6 max-w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
-        <table className="w-full table-fixed border-collapse text-left text-sm">
-          <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase text-ink-muted">
+      <section className="mt-6 w-full overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-card">
+        <table className="w-full min-w-[72rem] table-fixed border-collapse text-center text-sm">
+          <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-ink-muted">
             <tr>
-              <th className="w-[10%] px-2 py-3 sm:px-3">Трек</th>
-              <th className="w-[12%] px-2 py-3 sm:px-3">Клієнт</th>
-              <th className="w-[11%] px-2 py-3 sm:px-3">Статус</th>
-              <th className="w-[7%] px-2 py-3 sm:px-3">Км</th>
-              <th className="w-[7%] px-2 py-3 sm:px-3">Вага</th>
-              <th className="w-[9%] px-2 py-3 sm:px-3">Вартість</th>
-              <th className="w-[13%] px-2 py-3 sm:px-3">Створено</th>
-              <th className="w-[21%] px-2 py-3 sm:px-3">А → Б</th>
-              <th className="w-[10%] px-2 py-3 text-right sm:px-3">Дії</th>
+              <th className="w-[9%] px-3 py-3 sm:px-4">Трек</th>
+              <th className="w-[11%] px-3 py-3 sm:px-4">Клієнт</th>
+              <th className="w-[10%] px-3 py-3 sm:px-4">Статус</th>
+              <th className="w-[6%] px-3 py-3 sm:px-4">Км</th>
+              <th className="w-[6%] px-3 py-3 sm:px-4">Вага</th>
+              <th className="w-[8%] px-3 py-3 sm:px-4">Вартість</th>
+              <th className="w-[11%] px-3 py-3 sm:px-4">Створено</th>
+              <th className="w-[31%] px-3 py-3 sm:px-4">А → Б</th>
+              <th className="w-[8%] px-3 py-3 sm:px-4">Дії</th>
             </tr>
           </thead>
           <tbody>
             {listLoading ? (
               <tr>
-                <td colSpan={9} className="px-4 py-6 text-ink-muted">
+                <td colSpan={9} className="px-4 py-6 text-center text-ink-muted">
                   Завантаження…
                 </td>
               </tr>
             ) : shipments.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-4 py-6 text-ink-muted">
+                <td colSpan={9} className="px-4 py-6 text-center text-ink-muted">
                   Поки що немає відправлень.
                 </td>
               </tr>
             ) : (
               shipments.map((s) => (
                 <tr key={s.id} className="border-b border-slate-100 last:border-0">
-                  <td className="px-2 py-3 font-mono text-xs font-medium text-ink sm:px-3">
-                    <span className="block truncate" title={s.tracking_code}>
+                  <td className="px-3 py-3 align-middle font-mono text-xs font-medium text-ink sm:px-4">
+                    <span className="mx-auto block max-w-full truncate" title={s.tracking_code}>
                       {s.tracking_code}
                     </span>
                   </td>
-                  <td className="px-2 py-3 text-ink-muted sm:px-3">
-                    <span className="block truncate" title={s.client_name}>
+                  <td className="px-3 py-3 align-middle text-ink-muted sm:px-4">
+                    <span className="mx-auto block max-w-full truncate" title={s.client_name}>
                       {s.client_name}
                     </span>
                   </td>
-                  <td className="px-2 py-3 text-ink-muted sm:px-3">
-                    <span className="block truncate">{statusLabel(s.status)}</span>
+                  <td className="px-3 py-3 align-middle text-ink-muted sm:px-4">
+                    <span className="mx-auto block max-w-full truncate">{statusLabel(s.status)}</span>
                   </td>
-                  <td className="px-2 py-3 text-ink-muted sm:px-3">
-                    <span className="block truncate">{s.distance_km}</span>
+                  <td className="px-3 py-3 align-middle text-ink-muted sm:px-4">
+                    <span className="mx-auto block max-w-full truncate">{s.distance_km}</span>
                   </td>
-                  <td className="px-2 py-3 text-ink-muted sm:px-3">
-                    <span className="block truncate">{s.weight_kg ?? '—'}</span>
+                  <td className="px-3 py-3 align-middle text-ink-muted sm:px-4">
+                    <span className="mx-auto block max-w-full truncate">{s.weight_kg ?? '—'}</span>
                   </td>
-                  <td className="px-2 py-3 text-ink-muted sm:px-3">
-                    <span className="block truncate">{s.calculated_price}</span>
+                  <td className="px-3 py-3 align-middle text-ink-muted sm:px-4">
+                    <span className="mx-auto block max-w-full truncate">{s.calculated_price}</span>
                   </td>
-                  <td className="px-2 py-3 text-xs text-ink-muted sm:px-3">
-                    <span className="line-clamp-2 break-words leading-snug" title={formatDt(s.created_at)}>
+                  <td className="px-3 py-3 align-middle text-xs text-ink-muted sm:px-4">
+                    <span
+                      className="mx-auto block max-w-full leading-snug line-clamp-2 break-words"
+                      title={formatDt(s.created_at)}
+                    >
                       {formatDt(s.created_at)}
                     </span>
                   </td>
-                  <td className="min-w-0 px-2 py-3 text-xs text-ink-muted sm:px-3">
+                  <td className="min-w-0 px-3 py-3 align-middle text-xs text-ink-muted sm:px-4">
                     <span
-                      className="line-clamp-2 break-words leading-snug"
+                      className="mx-auto block max-w-full leading-snug line-clamp-3 break-words"
                       title={`${s.address_pickup} → ${s.address_delivery}`}
                     >
                       {s.address_pickup} → {s.address_delivery}
                     </span>
                   </td>
-                  <td className="px-2 py-3 text-right sm:px-3">
+                  <td className="px-3 py-3 align-middle sm:px-4">
                     <button
                       type="button"
                       className="text-brand-600 hover:text-brand-800"

@@ -6,7 +6,7 @@ export default function HomePage() {
   const { user, loading } = useSession();
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
+    <main className="mx-auto max-w-screen-2xl px-4 py-16 sm:px-6">
       <section className="rounded-2xl border border-slate-200 bg-white p-10 shadow-card">
         <h1 className="text-2xl font-semibold text-ink">Кур’єрська служба</h1>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-ink-muted">

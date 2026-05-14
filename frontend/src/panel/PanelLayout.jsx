@@ -12,7 +12,7 @@ export default function PanelLayout() {
   const { user } = useSession();
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
+    <div className="mx-auto max-w-screen-2xl px-4 py-8 sm:px-6">
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
         <aside className="lg:w-52 lg:shrink-0">
           <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
