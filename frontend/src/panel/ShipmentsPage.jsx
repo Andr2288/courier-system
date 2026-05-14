@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { apiFetch } from '../api.js';
 import { shipmentStatusBadgeClass, shipmentStatusLabel } from '../constants/shipmentStatus.js';
@@ -30,6 +30,96 @@ function formatDt(value) {
   } catch {
     return String(value);
   }
+}
+
+/**
+ * Одне текстове поле: підказки — адреси з історії, де є збіг із введеним текстом (без урахування регістру).
+ */
+function AddressTextFieldWithHints({ id, label, value, onChange, disabled, knownAddresses }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const blurTimerRef = useRef(null);
+
+  const matches = useMemo(() => {
+    const q = value.trim().toLowerCase();
+    if (!q) return [];
+    return knownAddresses
+      .filter((a) => a.toLowerCase().includes(q))
+      .slice(0, 25);
+  }, [value, knownAddresses]);
+
+  function clearBlurTimer() {
+    if (blurTimerRef.current != null) {
+      window.clearTimeout(blurTimerRef.current);
+      blurTimerRef.current = null;
+    }
+  }
+
+  function handleFocus() {
+    clearBlurTimer();
+    setMenuOpen(true);
+  }
+
+  function handleBlur() {
+    blurTimerRef.current = window.setTimeout(() => {
+      setMenuOpen(false);
+      blurTimerRef.current = null;
+    }, 150);
+  }
+
+  const showMenu = menuOpen && matches.length > 0 && !disabled;
+
+  return (
+    <div className="relative">
+      <label className="block text-sm font-medium text-ink" htmlFor={id}>
+        {label}
+      </label>
+      <input
+        id={id}
+        type="text"
+        name={id}
+        required
+        maxLength={512}
+        autoComplete="off"
+        spellCheck="true"
+        className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+        value={value}
+        onChange={(e) => {
+          onChange(e.target.value);
+          setMenuOpen(true);
+        }}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        disabled={disabled}
+      />
+      {knownAddresses.length > 0 ? (
+        <p className="mt-1 text-xs text-ink-muted">
+          Підказки з попередніх відправлень: введіть фрагмент адреси — у списку залишаться збіги.
+        </p>
+      ) : null}
+      {showMenu ? (
+        <ul
+          className="absolute left-0 right-0 z-[100] mt-0 max-h-52 overflow-y-auto rounded-lg border border-slate-200 bg-white py-1 text-left shadow-lg"
+          role="listbox"
+        >
+          {matches.map((addr) => (
+            <li key={addr} role="presentation">
+              <button
+                type="button"
+                className="w-full px-3 py-2 text-left text-sm text-ink hover:bg-slate-50"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  onChange(addr);
+                  setMenuOpen(false);
+                }}
+              >
+                {addr}
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  );
 }
 
 export default function ShipmentsPage() {
@@ -82,6 +172,18 @@ export default function ShipmentsPage() {
   }, [loadClients]);
 
   const canCreate = useMemo(() => clients.length > 0, [clients.length]);
+
+  /** Унікальні адреси з існуючих відправлень (забір + доставка), для підказок у формі. */
+  const knownAddresses = useMemo(() => {
+    const set = new Set();
+    for (const s of shipments) {
+      const a = typeof s.address_pickup === 'string' ? s.address_pickup.trim() : '';
+      const b = typeof s.address_delivery === 'string' ? s.address_delivery.trim() : '';
+      if (a) set.add(a);
+      if (b) set.add(b);
+    }
+    return Array.from(set).sort((x, y) => x.localeCompare(y, 'uk'));
+  }, [shipments]);
 
   const copyTrackingCode = useCallback(async (shipmentId, code) => {
     setCopyError('');
@@ -342,6 +444,7 @@ export default function ShipmentsPage() {
         isOpen={modalOpen}
         title="Нове відправлення"
         onClose={closeModal}
+        widthClass="max-w-4xl"
         footer={
           <div className="flex flex-wrap justify-end gap-2">
             <button
@@ -363,14 +466,18 @@ export default function ShipmentsPage() {
           </div>
         }
       >
-        <form id="shipment-create-form" className="grid max-h-[60vh] gap-3 overflow-y-auto pr-1" onSubmit={handleSubmit}>
+        <form
+          id="shipment-create-form"
+          className="grid max-h-[min(70vh,560px)] grid-cols-1 gap-x-6 gap-y-4 overflow-y-auto pr-1 sm:grid-cols-2"
+          onSubmit={handleSubmit}
+        >
           {formError ? (
-            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
+            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 sm:col-span-2" role="alert">
               {formError}
             </p>
           ) : null}
 
-          <div>
+          <div className="sm:col-span-2">
             <label className="block text-sm font-medium text-ink" htmlFor="sh-client">
               Клієнт
             </label>
@@ -391,38 +498,24 @@ export default function ShipmentsPage() {
             </select>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-ink" htmlFor="sh-a">
-              Адреса А (забір)
-            </label>
-            <textarea
-              id="sh-a"
-              required
-              rows={2}
-              maxLength={512}
-              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-              value={form.address_pickup}
-              onChange={(e) => setForm((f) => ({ ...f, address_pickup: e.target.value }))}
-              disabled={submitting}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-ink" htmlFor="sh-b">
-              Адреса Б (доставка)
-            </label>
-            <textarea
-              id="sh-b"
-              required
-              rows={2}
-              maxLength={512}
-              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-              value={form.address_delivery}
-              onChange={(e) => setForm((f) => ({ ...f, address_delivery: e.target.value }))}
-              disabled={submitting}
-            />
-          </div>
+          <AddressTextFieldWithHints
+            id="sh-a"
+            label="Адреса А (забір)"
+            value={form.address_pickup}
+            onChange={(v) => setForm((f) => ({ ...f, address_pickup: v }))}
+            disabled={submitting}
+            knownAddresses={knownAddresses}
+          />
+          <AddressTextFieldWithHints
+            id="sh-b"
+            label="Адреса Б (доставка)"
+            value={form.address_delivery}
+            onChange={(v) => setForm((f) => ({ ...f, address_delivery: v }))}
+            disabled={submitting}
+            knownAddresses={knownAddresses}
+          />
 
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 sm:col-span-2 sm:grid-cols-2">
             <div>
               <label className="block text-sm font-medium text-ink" htmlFor="sh-km">
                 Відстань, км
@@ -457,58 +550,60 @@ export default function ShipmentsPage() {
             </div>
           </div>
 
-          <p className="text-xs font-medium text-ink-muted">Габарити посилки, см</p>
-          <div className="grid grid-cols-3 gap-2">
-            <div>
-              <label className="sr-only" htmlFor="sh-l">
-                Довжина
-              </label>
-              <input
-                id="sh-l"
-                type="number"
-                step="0.01"
-                inputMode="decimal"
-                required
-                placeholder="Довжина"
-                className="w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
-                value={form.length_cm}
-                onChange={(e) => setForm((f) => ({ ...f, length_cm: e.target.value }))}
-                disabled={submitting}
-              />
-            </div>
-            <div>
-              <label className="sr-only" htmlFor="sh-wi">
-                Ширина
-              </label>
-              <input
-                id="sh-wi"
-                type="number"
-                step="0.01"
-                inputMode="decimal"
-                required
-                placeholder="Ширина"
-                className="w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
-                value={form.width_cm}
-                onChange={(e) => setForm((f) => ({ ...f, width_cm: e.target.value }))}
-                disabled={submitting}
-              />
-            </div>
-            <div>
-              <label className="sr-only" htmlFor="sh-h">
-                Висота
-              </label>
-              <input
-                id="sh-h"
-                type="number"
-                step="0.01"
-                inputMode="decimal"
-                required
-                placeholder="Висота"
-                className="w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
-                value={form.height_cm}
-                onChange={(e) => setForm((f) => ({ ...f, height_cm: e.target.value }))}
-                disabled={submitting}
-              />
+          <div className="sm:col-span-2">
+            <p className="text-xs font-medium text-ink-muted">Габарити посилки, см</p>
+            <div className="mt-1 grid grid-cols-3 gap-2 sm:max-w-md">
+              <div>
+                <label className="sr-only" htmlFor="sh-l">
+                  Довжина
+                </label>
+                <input
+                  id="sh-l"
+                  type="number"
+                  step="0.01"
+                  inputMode="decimal"
+                  required
+                  placeholder="Довжина"
+                  className="w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
+                  value={form.length_cm}
+                  onChange={(e) => setForm((f) => ({ ...f, length_cm: e.target.value }))}
+                  disabled={submitting}
+                />
+              </div>
+              <div>
+                <label className="sr-only" htmlFor="sh-wi">
+                  Ширина
+                </label>
+                <input
+                  id="sh-wi"
+                  type="number"
+                  step="0.01"
+                  inputMode="decimal"
+                  required
+                  placeholder="Ширина"
+                  className="w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
+                  value={form.width_cm}
+                  onChange={(e) => setForm((f) => ({ ...f, width_cm: e.target.value }))}
+                  disabled={submitting}
+                />
+              </div>
+              <div>
+                <label className="sr-only" htmlFor="sh-h">
+                  Висота
+                </label>
+                <input
+                  id="sh-h"
+                  type="number"
+                  step="0.01"
+                  inputMode="decimal"
+                  required
+                  placeholder="Висота"
+                  className="w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
+                  value={form.height_cm}
+                  onChange={(e) => setForm((f) => ({ ...f, height_cm: e.target.value }))}
+                  disabled={submitting}
+                />
+              </div>
             </div>
           </div>
         </form>

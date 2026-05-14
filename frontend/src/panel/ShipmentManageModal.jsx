@@ -123,7 +123,7 @@ export default function ShipmentManageModal({ shipmentId, isOpen, onClose, onUpd
       isOpen={isOpen}
       title={s ? `Відправлення ${s.tracking_code}` : 'Відправлення'}
       onClose={handleClose}
-      widthClass="max-w-2xl"
+      widthClass="max-w-6xl"
       footer={
         <div className="flex justify-end">
           <button
@@ -147,158 +147,137 @@ export default function ShipmentManageModal({ shipmentId, isOpen, onClose, onUpd
       ) : null}
 
       {s ? (
-        <div className="space-y-5">
-          <dl className="grid gap-2 text-sm sm:grid-cols-2">
-            <div>
-              <dt className="text-ink-muted">Статус</dt>
-              <dd className="mt-1">
-                <span className={shipmentStatusBadgeClass(s.status)}>{shipmentStatusLabel(s.status)}</span>
-              </dd>
-            </div>
-            <div>
-              <dt className="text-ink-muted">Вартість</dt>
-              <dd className="font-medium text-ink">{s.calculated_price}</dd>
-            </div>
-            <div className="sm:col-span-2">
-              <dt className="text-ink-muted">Клієнт</dt>
-              <dd className="font-medium text-ink">{s.client_name}</dd>
-            </div>
-            <div className="sm:col-span-2">
-              <dt className="text-ink-muted">Кур’єр</dt>
-              <dd className="text-ink">{s.courier_name ?? '—'}</dd>
-            </div>
-            <div className="sm:col-span-2">
-              <dt className="text-ink-muted">Адреса А</dt>
-              <dd className="text-ink">{s.address_pickup}</dd>
-            </div>
-            <div className="sm:col-span-2">
-              <dt className="text-ink-muted">Адреса Б</dt>
-              <dd className="text-ink">{s.address_delivery}</dd>
-            </div>
-            {pkg ? (
-              <div className="sm:col-span-2">
-                <dt className="text-ink-muted">Посилка</dt>
-                <dd className="text-ink">
-                  {pkg.length_cm}×{pkg.width_cm}×{pkg.height_cm} см, {pkg.weight_kg} кг
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:items-start">
+          <div className="min-w-0 space-y-5">
+            <dl className="grid gap-2 text-sm sm:grid-cols-2">
+              <div>
+                <dt className="text-ink-muted">Статус</dt>
+                <dd className="mt-1">
+                  <span className={shipmentStatusBadgeClass(s.status)}>{shipmentStatusLabel(s.status)}</span>
                 </dd>
               </div>
-            ) : null}
-          </dl>
+              <div>
+                <dt className="text-ink-muted">Вартість</dt>
+                <dd className="font-medium text-ink">{s.calculated_price}</dd>
+              </div>
+              <div className="sm:col-span-2">
+                <dt className="text-ink-muted">Клієнт</dt>
+                <dd className="font-medium text-ink">{s.client_name}</dd>
+              </div>
+              <div className="sm:col-span-2">
+                <dt className="text-ink-muted">Кур’єр</dt>
+                <dd className="text-ink">{s.courier_name ?? '—'}</dd>
+              </div>
+              <div className="sm:col-span-2">
+                <dt className="text-ink-muted">Адреса А</dt>
+                <dd className="text-ink">{s.address_pickup}</dd>
+              </div>
+              <div className="sm:col-span-2">
+                <dt className="text-ink-muted">Адреса Б</dt>
+                <dd className="text-ink">{s.address_delivery}</dd>
+              </div>
+              {pkg ? (
+                <div className="sm:col-span-2">
+                  <dt className="text-ink-muted">Посилка</dt>
+                  <dd className="text-ink">
+                    {pkg.length_cm}×{pkg.width_cm}×{pkg.height_cm} см, {pkg.weight_kg} кг
+                  </dd>
+                </div>
+              ) : null}
+            </dl>
 
-          <section className="rounded-xl border border-slate-100 bg-slate-50/80 p-4">
-            <h3 className="text-sm font-semibold text-ink">Відгуки клієнта</h3>
-            <p className="mt-1 text-xs text-ink-muted">
-              Текстові відгуки залишаються на сторінці «Відстеження» за трекінг-кодом. Тут лише перегляд; кілька
-              записів на одне відправлення дозволені. Для аналітики кур’єра враховується прив’язка до відправлення.
-            </p>
-            <ul className="mt-3 max-h-40 space-y-2 overflow-y-auto text-sm">
-              {feedbacks.length === 0 ? (
-                <li className="text-ink-muted">Відгуків ще немає.</li>
-              ) : (
-                feedbacks.map((fb) => (
-                  <li
-                    key={fb.id}
-                    className="rounded-lg border border-slate-100 bg-white px-3 py-2 text-ink-muted"
-                  >
-                    <span className="text-xs">{formatDt(fb.created_at)}</span>
-                    <p className="mt-1 text-sm text-ink">{fb.body}</p>
-                  </li>
-                ))
-              )}
-            </ul>
-          </section>
-
-          {!isDelivered ? (
-            <>
-              <section className="rounded-xl border border-slate-100 bg-slate-50/80 p-4">
-                <h3 className="text-sm font-semibold text-ink">Призначити кур’єра</h3>
-                <form className="mt-3 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end" onSubmit={handleAssign}>
-                  <select
-                    className="min-w-[12rem] flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                    value={courierId}
-                    onChange={(e) => setCourierId(e.target.value)}
-                    disabled={assigning}
-                  >
-                    <option value="">Оберіть кур’єра…</option>
-                    {couriers.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.full_name} — {c.phone}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="submit"
-                    disabled={assigning || couriers.length === 0}
-                    className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50"
-                  >
-                    {assigning ? 'Збереження…' : 'Застосувати'}
-                  </button>
-                </form>
-              </section>
-
-              <section className="rounded-xl border border-slate-100 bg-slate-50/80 p-4">
-                <h3 className="text-sm font-semibold text-ink">Подія по маршруту</h3>
-                <form className="mt-3 grid gap-3" onSubmit={handleEvent}>
-                  <div>
-                    <label className="block text-xs font-medium text-ink-muted" htmlFor="ev-type">
-                      Тип
-                    </label>
+            {!isDelivered ? (
+              <>
+                <section className="rounded-xl border border-slate-100 bg-slate-50/80 p-4">
+                  <h3 className="text-sm font-semibold text-ink">Призначити кур’єра</h3>
+                  <form className="mt-3 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end" onSubmit={handleAssign}>
                     <select
-                      id="ev-type"
-                      className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                      value={eventType}
-                      onChange={(e) => setEventType(e.target.value)}
-                      disabled={eventSubmitting}
+                      className="min-w-[12rem] flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                      value={courierId}
+                      onChange={(e) => setCourierId(e.target.value)}
+                      disabled={assigning}
                     >
-                      <option value="picked_up">Забрано (в дорозі)</option>
-                      <option value="delivered">Доставлено</option>
-                      <option value="note">Нотатка (без зміни статусу)</option>
+                      <option value="">Оберіть кур’єра…</option>
+                      {couriers.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.full_name} — {c.phone}
+                        </option>
+                      ))}
                     </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-ink-muted" htmlFor="ev-com">
-                      Коментар (обов’язково для нотатки)
-                    </label>
-                    <textarea
-                      id="ev-com"
-                      rows={2}
-                      className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                      value={eventComment}
-                      onChange={(e) => setEventComment(e.target.value)}
+                    <button
+                      type="submit"
+                      disabled={assigning || couriers.length === 0}
+                      className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50"
+                    >
+                      {assigning ? 'Збереження…' : 'Застосувати'}
+                    </button>
+                  </form>
+                </section>
+
+                <section className="rounded-xl border border-slate-100 bg-slate-50/80 p-4">
+                  <h3 className="text-sm font-semibold text-ink">Подія по маршруту</h3>
+                  <form className="mt-3 grid gap-3" onSubmit={handleEvent}>
+                    <div>
+                      <label className="block text-xs font-medium text-ink-muted" htmlFor="ev-type">
+                        Тип
+                      </label>
+                      <select
+                        id="ev-type"
+                        className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                        value={eventType}
+                        onChange={(e) => setEventType(e.target.value)}
+                        disabled={eventSubmitting}
+                      >
+                        <option value="picked_up">Забрано (в дорозі)</option>
+                        <option value="delivered">Доставлено</option>
+                        <option value="note">Нотатка (без зміни статусу)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-ink-muted" htmlFor="ev-com">
+                        Коментар (обов’язково для нотатки)
+                      </label>
+                      <textarea
+                        id="ev-com"
+                        rows={2}
+                        className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                        value={eventComment}
+                        onChange={(e) => setEventComment(e.target.value)}
+                        disabled={eventSubmitting}
+                        placeholder="Необов’язково…"
+                      />
+                    </div>
+                    <button
+                      type="submit"
                       disabled={eventSubmitting}
-                      placeholder="Необов’язково…"
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={eventSubmitting}
-                    className="w-full rounded-lg bg-brand-500 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50 sm:w-auto"
-                  >
-                    {eventSubmitting ? 'Збереження…' : 'Додати подію'}
-                  </button>
-                </form>
-              </section>
-            </>
-          ) : (
-            <div className="space-y-5">
-              <p className="text-sm text-ink-muted">
-                Відправлення доставлено — призначення кур’єра та події маршруту змінити не можна. Оцінку та
-                текстовий відгук клієнт залишає на сторінці «Відстеження» за трекінг-кодом.
-              </p>
-              {detail?.rating ? (
-                <p className="text-sm text-ink">
-                  Поточна оцінка клієнта: <span className="font-semibold">{detail.rating.score}</span> / 5
+                      className="w-full rounded-lg bg-brand-500 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50 sm:w-auto"
+                    >
+                      {eventSubmitting ? 'Збереження…' : 'Додати подію'}
+                    </button>
+                  </form>
+                </section>
+              </>
+            ) : (
+              <div className="space-y-5">
+                <p className="text-sm text-ink-muted">
+                  Відправлення доставлено — призначення кур’єра та події маршруту змінити не можна. Оцінку та
+                  текстовий відгук клієнт залишає на сторінці «Відстеження» за трекінг-кодом.
                 </p>
-              ) : (
-                <p className="text-sm text-ink-muted">Клієнт ще не залишив оцінку на сторінці відстеження.</p>
-              )}
+                {detail?.rating ? (
+                  <p className="text-sm text-ink">
+                    Поточна оцінка клієнта: <span className="font-semibold">{detail.rating.score}</span> / 5
+                  </p>
+                ) : (
+                  <p className="text-sm text-ink-muted">Клієнт ще не залишив оцінку на сторінці відстеження.</p>
+                )}
+              </div>
+            )}
+          </div>
 
-            </div>
-          )}
-
-          <section>
-            <h3 className="text-sm font-semibold text-ink">Журнал подій</h3>
-            <ul className="mt-2 max-h-48 space-y-2 overflow-y-auto text-sm">
+          <section className="flex min-h-0 flex-col rounded-xl border border-slate-100 bg-slate-50/80 p-4 lg:sticky lg:top-0 lg:max-h-[min(72vh,560px)]">
+            <h3 className="shrink-0 text-sm font-semibold text-ink">Журнал подій</h3>
+            <p className="mt-1 shrink-0 text-xs text-ink-muted">Події маршруту та зміни статусу.</p>
+            <ul className="mt-2 min-h-0 flex-1 space-y-2 overflow-y-auto text-sm lg:max-h-none">
               {logs.length === 0 ? (
                 <li className="text-ink-muted">Немає записів.</li>
               ) : (
@@ -315,6 +294,28 @@ export default function ShipmentManageModal({ shipmentId, isOpen, onClose, onUpd
                     {log.comment ? (
                       <p className="mt-1 text-xs text-ink-muted">{log.comment}</p>
                     ) : null}
+                  </li>
+                ))
+              )}
+            </ul>
+          </section>
+
+          <section className="flex min-h-0 flex-col rounded-xl border border-slate-100 bg-slate-50/80 p-4 lg:sticky lg:top-0 lg:max-h-[min(72vh,560px)]">
+            <h3 className="shrink-0 text-sm font-semibold text-ink">Відгуки клієнта</h3>
+            <p className="mt-1 shrink-0 text-xs text-ink-muted">
+              Лише перегляд; клієнт залишає відгуки на «Відстеженні» за трекінг-кодом.
+            </p>
+            <ul className="mt-2 min-h-0 flex-1 space-y-2 overflow-y-auto text-sm lg:max-h-none">
+              {feedbacks.length === 0 ? (
+                <li className="text-ink-muted">Відгуків ще немає.</li>
+              ) : (
+                feedbacks.map((fb) => (
+                  <li
+                    key={fb.id}
+                    className="rounded-lg border border-slate-100 bg-white px-3 py-2 text-ink-muted"
+                  >
+                    <span className="text-xs">{formatDt(fb.created_at)}</span>
+                    <p className="mt-1 text-sm text-ink">{fb.body}</p>
                   </li>
                 ))
               )}
