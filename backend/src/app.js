@@ -8,6 +8,7 @@ import couriersRouter from './routes/couriers.js';
 import shipmentsRouter from './routes/shipments.js';
 import tariffsRouter from './routes/tariffs.js';
 import trackPublicRouter from './routes/trackPublic.js';
+import analyticsRouter from './routes/analytics.js';
 
 export function createApp() {
   const app = express();
@@ -31,6 +32,7 @@ export function createApp() {
   app.use('/api/couriers', couriersRouter);
   app.use('/api/shipments', shipmentsRouter);
   app.use('/api/tariffs', tariffsRouter);
+  app.use('/api/analytics', analyticsRouter);
 
   app.use((req, res, next) => {
     if (req.path.startsWith('/api')) {

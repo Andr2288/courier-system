@@ -60,11 +60,13 @@ router.get('/:id', async (req, res, next) => {
               s.updated_at, s.delivered_at, s.client_id, s.courier_id, s.address_pickup, s.address_delivery,
               c.name AS client_name,
               co.full_name AS courier_name,
-              p.id AS package_id, p.weight_kg, p.length_cm, p.width_cm, p.height_cm
+              p.id AS package_id, p.weight_kg, p.length_cm, p.width_cm, p.height_cm,
+              rt.score AS rating_score
        FROM shipments s
        INNER JOIN clients c ON c.id = s.client_id AND c.deleted_at IS NULL
        LEFT JOIN couriers co ON co.id = s.courier_id AND co.deleted_at IS NULL
        LEFT JOIN packages p ON p.shipment_id = s.id
+       LEFT JOIN ratings rt ON rt.shipment_id = s.id
        WHERE s.id = ?
        LIMIT 1`,
       [id],
@@ -105,10 +107,25 @@ router.get('/:id', async (req, res, next) => {
       [id],
     );
 
+    const [complaintRows] = await pool.query(
+      `SELECT id, body, created_at
+       FROM complaints
+       WHERE shipment_id = ?
+       ORDER BY created_at DESC, id DESC`,
+      [id],
+    );
+
+    const rating =
+      row.rating_score != null && row.rating_score !== undefined
+        ? { score: Number(row.rating_score) }
+        : null;
+
     return res.json({
       shipment,
       package: pkg,
       route_logs: logRows,
+      rating,
+      complaints: complaintRows,
     });
   } catch (err) {
     next(err);
@@ -404,6 +421,87 @@ router.post('/:id/events', async (req, res, next) => {
     }
 
     return res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/:id/rating', async (req, res, next) => {
+  try {
+    const id = parseIdParam(req, res);
+    if (id === null) return;
+
+    const raw = req.body?.score;
+    const score = Number(raw);
+    if (!Number.isInteger(score) || score < 1 || score > 5) {
+      return res.status(400).json({ error: 'Оцінка має бути цілим числом від 1 до 5.' });
+    }
+
+    const [[ship]] = await pool.query(`SELECT id, status FROM shipments WHERE id = ? LIMIT 1`, [id]);
+    if (!ship) {
+      return res.status(404).json({ error: 'Відправлення не знайдено.' });
+    }
+    if (ship.status !== SHIPMENT_STATUS.DELIVERED) {
+      return res
+        .status(400)
+        .json({ error: 'Оцінку можна залишити лише після доставки відправлення.' });
+    }
+
+    await pool.query(
+      `INSERT INTO ratings (shipment_id, score) VALUES (?, ?)
+       ON DUPLICATE KEY UPDATE score = VALUES(score)`,
+      [id, score],
+    );
+
+    return res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/:id/complaints', async (req, res, next) => {
+  try {
+    const id = parseIdParam(req, res);
+    if (id === null) return;
+
+    const bodyText = typeof req.body?.body === 'string' ? req.body.body.trim() : '';
+    if (bodyText.length < 3) {
+      return res.status(400).json({ error: 'Текст скарги має бути не коротшим за 3 символи.' });
+    }
+    if (bodyText.length > 16000) {
+      return res.status(400).json({ error: 'Текст скарги занадто довгий.' });
+    }
+
+    const [[ship]] = await pool.query(
+      `SELECT id, courier_id FROM shipments WHERE id = ? LIMIT 1`,
+      [id],
+    );
+    if (!ship) {
+      return res.status(404).json({ error: 'Відправлення не знайдено.' });
+    }
+
+    const rawCourierId = ship.courier_id;
+    let courierId = null;
+    if (rawCourierId != null && rawCourierId !== '') {
+      const n = Number(rawCourierId);
+      if (Number.isFinite(n) && n > 0) {
+        courierId = Math.trunc(n);
+      }
+    }
+
+    const [ins] = await pool.query(
+      `INSERT INTO complaints (shipment_id, courier_id, body) VALUES (?, ?, ?)`,
+      [id, courierId, bodyText],
+    );
+
+    const insertId = ins.insertId;
+    const [[created]] = await pool.query(
+      `SELECT id, shipment_id, courier_id, body, created_at
+       FROM complaints WHERE id = ? LIMIT 1`,
+      [insertId],
+    );
+
+    return res.status(201).json({ complaint: created });
   } catch (err) {
     next(err);
   }

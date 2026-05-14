@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 import { loginRequest } from '../api.js';
 import { useSession } from '../context/SessionContext.jsx';
@@ -90,9 +90,7 @@ export default function LoginPage() {
         </form>
 
         <p className="mt-6 text-center text-sm text-ink-muted">
-          <Link className="font-medium text-brand-600 hover:text-brand-700" to="/">
-            На головну
-          </Link>
+          Без входу доступна лише ця сторінка. Після успішного входу відкриються головна, відстеження та панель.
         </p>
       </div>
     </div>

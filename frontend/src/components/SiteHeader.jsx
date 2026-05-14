@@ -15,13 +15,13 @@ export default function SiteHeader() {
 
   function handleLogout() {
     logout();
-    navigate('/', { replace: true });
+    navigate('/login', { replace: true });
   }
 
   return (
     <header className="border-b border-slate-200 bg-white shadow-sm">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
-        <Link to="/" className="flex shrink-0 items-center gap-3">
+        <Link to={user ? '/' : '/login'} className="flex shrink-0 items-center gap-3">
           <span
             className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500 text-sm font-bold text-white shadow-card"
             aria-hidden
@@ -35,16 +35,15 @@ export default function SiteHeader() {
         </Link>
 
         <nav className="flex flex-wrap items-center justify-end gap-1 sm:gap-2" aria-label="Головна навігація">
-          <NavLink to="/track" className={navClass}>
-            Відстеження
-          </NavLink>
-
           {loading ? (
             <span className="px-3 py-2 text-xs text-ink-muted" aria-live="polite">
               …
             </span>
           ) : user ? (
             <>
+              <NavLink to="/track" className={navClass}>
+                Відстеження
+              </NavLink>
               <NavLink to="/panel" className={navClass}>
                 Панель
               </NavLink>

@@ -35,6 +35,9 @@ export default function PanelLayout() {
               <NavLink to="/panel/tariffs" className={navClass}>
                 Тарифи
               </NavLink>
+              <NavLink to="/panel/analytics" className={navClass}>
+                Аналітика
+              </NavLink>
             </nav>
           </div>
         </aside>
