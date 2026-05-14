@@ -123,7 +123,7 @@ export default function ShipmentManageModal({ shipmentId, isOpen, onClose, onUpd
       isOpen={isOpen}
       title={s ? `Відправлення ${s.tracking_code}` : 'Відправлення'}
       onClose={handleClose}
-      widthClass="max-w-6xl"
+      widthClass="max-w-7xl"
       footer={
         <div className="flex justify-end">
           <button
@@ -147,7 +147,7 @@ export default function ShipmentManageModal({ shipmentId, isOpen, onClose, onUpd
       ) : null}
 
       {s ? (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:items-start">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-4 lg:items-start">
           <div className="min-w-0 space-y-5">
             <dl className="grid gap-2 text-sm sm:grid-cols-2">
               <div>
@@ -186,6 +186,24 @@ export default function ShipmentManageModal({ shipmentId, isOpen, onClose, onUpd
               ) : null}
             </dl>
 
+            {isDelivered ? (
+              <div className="space-y-3 rounded-xl border border-slate-100 bg-slate-50/80 p-4">
+                <p className="text-sm text-ink-muted">
+                  Відправлення доставлено — призначення кур’єра та події маршруту змінити не можна. Оцінку та
+                  текстовий відгук клієнт залишає на сторінці «Відстеження» за трекінг-кодом.
+                </p>
+                {detail?.rating ? (
+                  <p className="text-sm text-ink">
+                    Поточна оцінка клієнта: <span className="font-semibold">{detail.rating.score}</span> / 5
+                  </p>
+                ) : (
+                  <p className="text-sm text-ink-muted">Клієнт ще не залишив оцінку на сторінці відстеження.</p>
+                )}
+              </div>
+            ) : null}
+          </div>
+
+          <div className="min-w-0 space-y-5">
             {!isDelivered ? (
               <>
                 <section className="rounded-xl border border-slate-100 bg-slate-50/80 p-4">
@@ -235,7 +253,7 @@ export default function ShipmentManageModal({ shipmentId, isOpen, onClose, onUpd
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-ink-muted" htmlFor="ev-com">
-                        Коментар (обов’язково для нотатки)
+                        Нотатка
                       </label>
                       <textarea
                         id="ev-com"
@@ -258,19 +276,12 @@ export default function ShipmentManageModal({ shipmentId, isOpen, onClose, onUpd
                 </section>
               </>
             ) : (
-              <div className="space-y-5">
-                <p className="text-sm text-ink-muted">
-                  Відправлення доставлено — призначення кур’єра та події маршруту змінити не можна. Оцінку та
-                  текстовий відгук клієнт залишає на сторінці «Відстеження» за трекінг-кодом.
+              <section className="rounded-xl border border-slate-100 bg-slate-50/80 p-4">
+                <h3 className="text-sm font-semibold text-ink">Дії</h3>
+                <p className="mt-2 text-sm text-ink-muted">
+                  Після доставки призначення кур’єра та додавання подій маршруту недоступні.
                 </p>
-                {detail?.rating ? (
-                  <p className="text-sm text-ink">
-                    Поточна оцінка клієнта: <span className="font-semibold">{detail.rating.score}</span> / 5
-                  </p>
-                ) : (
-                  <p className="text-sm text-ink-muted">Клієнт ще не залишив оцінку на сторінці відстеження.</p>
-                )}
-              </div>
+              </section>
             )}
           </div>
 

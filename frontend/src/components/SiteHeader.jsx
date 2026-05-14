@@ -33,7 +33,6 @@ export default function SiteHeader() {
           </span>
           <div>
             <p className="text-sm font-semibold text-ink">Кур’єрська служба</p>
-            <p className="text-xs text-ink-muted">MVP</p>
           </div>
         </Link>
 

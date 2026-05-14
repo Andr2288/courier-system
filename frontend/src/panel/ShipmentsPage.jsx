@@ -282,10 +282,6 @@ export default function ShipmentsPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-ink">Відправлення</h1>
-          <p className="mt-1 text-sm text-ink-muted">
-            Створення, призначення кур’єра, події маршруту та статуси. Публічне відстеження — у пункті «Відстеження»
-            у шапці.
-          </p>
         </div>
         <button
           type="button"

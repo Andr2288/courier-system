@@ -161,8 +161,7 @@ export default function TrackingPage() {
     <main className="mx-auto max-w-2xl px-4 py-12">
       <h1 className="text-2xl font-semibold text-ink">Відстеження посилки</h1>
       <p className="mt-2 text-sm text-ink-muted">
-        Введіть трекінг-код без входу в систему. Показуються статус, скорочені адреси та історія подій. Після
-        доставки тут можна залишити оцінку сервісу та текстовий відгук.
+        Введіть трекінг-код, щоб переглянути статус вашого замовлення.
       </p>
 
       <form className="mt-6 flex flex-col gap-3 sm:flex-row" onSubmit={handleSearch}>
