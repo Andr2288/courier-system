@@ -1,4 +1,4 @@
-import { NavLink, Link, useNavigate } from 'react-router-dom';
+import { NavLink, Link, useNavigate, useLocation } from 'react-router-dom';
 
 import { useSession } from '../context/SessionContext.jsx';
 
@@ -11,7 +11,10 @@ function navClass({ isActive }) {
 
 export default function SiteHeader() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, loading, logout } = useSession();
+
+  const panelNavActive = location.pathname.startsWith('/panel');
 
   function handleLogout() {
     logout();
@@ -35,7 +38,7 @@ export default function SiteHeader() {
         </Link>
 
         <nav className="flex flex-wrap items-center justify-end gap-1 sm:gap-2" aria-label="Головна навігація">
-          <NavLink to="/track" className={navClass}>
+          <NavLink to="/" end className={navClass}>
             Відстеження
           </NavLink>
 
@@ -45,7 +48,15 @@ export default function SiteHeader() {
             </span>
           ) : user ? (
             <>
-              <NavLink to="/panel" className={navClass}>
+              <NavLink
+                to="/panel/shipments"
+                className={() =>
+                  [
+                    'rounded-lg px-3 py-2 text-sm font-medium transition',
+                    panelNavActive ? 'bg-brand-50 text-brand-800' : 'text-ink-muted hover:bg-slate-100 hover:text-ink',
+                  ].join(' ')
+                }
+              >
                 Панель
               </NavLink>
               <span

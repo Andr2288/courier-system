@@ -4,16 +4,10 @@ import { ACTIVE_SHIPMENT_IN_SQL, ACTIVE_SHIPMENT_STATUSES } from '../constants/s
 import { pool } from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
 import { parseIdParam } from '../util/ids.js';
+import { parseOptionalEmail, parsePhoneForDb } from '../util/contactValidation.js';
 
 const router = Router();
 router.use(requireAuth);
-
-function normalizeEmail(value) {
-  if (value === undefined || value === null) return null;
-  if (typeof value !== 'string') return null;
-  const t = value.trim();
-  return t.length === 0 ? null : t;
-}
 
 router.get('/', async (req, res, next) => {
   try {
@@ -60,19 +54,23 @@ router.post('/', async (req, res, next) => {
       return res.status(400).json({ error: 'Вкажіть телефон.' });
     }
     const nameTrim = name.trim();
-    const phoneTrim = phone.trim();
-    if (nameTrim.length > 255 || phoneTrim.length > 32) {
-      return res.status(400).json({ error: 'Занадто довге значення поля.' });
+    if (nameTrim.length > 255) {
+      return res.status(400).json({ error: 'Занадто довга назва клієнта.' });
     }
 
-    const emailNorm = normalizeEmail(email);
-    if (emailNorm && emailNorm.length > 255) {
-      return res.status(400).json({ error: 'Email занадто довгий.' });
+    const emailParsed = parseOptionalEmail(email);
+    if (emailParsed.error) {
+      return res.status(400).json({ error: emailParsed.error });
+    }
+
+    const phoneParsed = parsePhoneForDb(phone);
+    if (phoneParsed.error) {
+      return res.status(400).json({ error: phoneParsed.error });
     }
 
     const [result] = await pool.query(
       `INSERT INTO clients (name, phone, email) VALUES (?, ?, ?)`,
-      [nameTrim, phoneTrim, emailNorm],
+      [nameTrim, phoneParsed.value, emailParsed.value],
     );
 
     const [rows] = await pool.query(
@@ -98,19 +96,24 @@ router.put('/:id', async (req, res, next) => {
       return res.status(400).json({ error: 'Вкажіть телефон.' });
     }
     const nameTrim = name.trim();
-    const phoneTrim = phone.trim();
-    const emailNorm = normalizeEmail(email);
-    if (nameTrim.length > 255 || phoneTrim.length > 32) {
-      return res.status(400).json({ error: 'Занадто довге значення поля.' });
+    if (nameTrim.length > 255) {
+      return res.status(400).json({ error: 'Занадто довга назва клієнта.' });
     }
-    if (emailNorm && emailNorm.length > 255) {
-      return res.status(400).json({ error: 'Email занадто довгий.' });
+
+    const emailParsed = parseOptionalEmail(email);
+    if (emailParsed.error) {
+      return res.status(400).json({ error: emailParsed.error });
+    }
+
+    const phoneParsed = parsePhoneForDb(phone);
+    if (phoneParsed.error) {
+      return res.status(400).json({ error: phoneParsed.error });
     }
 
     const [upd] = await pool.query(
       `UPDATE clients SET name = ?, phone = ?, email = ?
        WHERE id = ? AND deleted_at IS NULL`,
-      [nameTrim, phoneTrim, emailNorm, id],
+      [nameTrim, phoneParsed.value, emailParsed.value, id],
     );
     if (upd.affectedRows === 0) {
       return res.status(404).json({ error: 'Клієнта не знайдено.' });

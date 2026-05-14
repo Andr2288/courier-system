@@ -20,9 +20,6 @@ export default function PanelLayout() {
             <p className="mt-1 truncate text-sm font-semibold text-ink">{user.login}</p>
             <p className="text-xs text-ink-muted">{user.role}</p>
             <nav className="mt-4 flex flex-col gap-1 border-t border-slate-100 pt-4">
-              <NavLink to="/panel" end className={navClass}>
-                Огляд
-              </NavLink>
               <NavLink to="/panel/clients" className={navClass}>
                 Клієнти
               </NavLink>
@@ -46,12 +43,6 @@ export default function PanelLayout() {
           <Outlet />
         </div>
       </div>
-
-      <p className="mt-8 text-center text-sm text-ink-muted lg:text-left">
-        <NavLink className="font-medium text-brand-600 hover:text-brand-700" to="/">
-          На головну сайту
-        </NavLink>
-      </p>
     </div>
   );
 }

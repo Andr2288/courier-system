@@ -4,6 +4,10 @@ import { apiFetch } from '../api.js';
 import { shipmentStatusBadgeClass, shipmentStatusLabel } from '../constants/shipmentStatus.js';
 import Modal from '../components/Modal.jsx';
 import ShipmentManageModal from './ShipmentManageModal.jsx';
+import {
+  parsePositiveDecimalField,
+  validateShipmentAddresses,
+} from '../utils/formValidation.js';
 
 const emptyForm = {
   client_id: '',
@@ -109,17 +113,53 @@ export default function ShipmentsPage() {
   async function handleSubmit(e) {
     e.preventDefault();
     setFormError('');
+    const clientId = Number(form.client_id);
+    if (!Number.isInteger(clientId) || clientId < 1) {
+      setFormError('Оберіть клієнта.');
+      return;
+    }
+    const addrErr = validateShipmentAddresses(form.address_pickup, form.address_delivery);
+    if (addrErr) {
+      setFormError(addrErr);
+      return;
+    }
+    const d = parsePositiveDecimalField(form.distance_km, 'Відстань');
+    if (d.error) {
+      setFormError(d.error);
+      return;
+    }
+    const L = parsePositiveDecimalField(form.length_cm, 'Довжина');
+    if (L.error) {
+      setFormError(L.error);
+      return;
+    }
+    const W = parsePositiveDecimalField(form.width_cm, 'Ширина');
+    if (W.error) {
+      setFormError(W.error);
+      return;
+    }
+    const H = parsePositiveDecimalField(form.height_cm, 'Висота');
+    if (H.error) {
+      setFormError(H.error);
+      return;
+    }
+    const weight = parsePositiveDecimalField(form.weight_kg, 'Вага');
+    if (weight.error) {
+      setFormError(weight.error);
+      return;
+    }
+
     setSubmitting(true);
     try {
       const body = {
-        client_id: Number(form.client_id),
-        address_pickup: form.address_pickup,
-        address_delivery: form.address_delivery,
-        distance_km: Number(form.distance_km),
-        length_cm: Number(form.length_cm),
-        width_cm: Number(form.width_cm),
-        height_cm: Number(form.height_cm),
-        weight_kg: Number(form.weight_kg),
+        client_id: clientId,
+        address_pickup: form.address_pickup.trim(),
+        address_delivery: form.address_delivery.trim(),
+        distance_km: d.value,
+        length_cm: L.value,
+        width_cm: W.value,
+        height_cm: H.value,
+        weight_kg: weight.value,
       };
       const data = await apiFetch('/api/shipments', { method: 'POST', body });
       setModalOpen(false);
@@ -288,7 +328,7 @@ export default function ShipmentsPage() {
                       className="text-brand-600 hover:text-brand-800"
                       onClick={() => setManageId(s.id)}
                     >
-                      Керувати
+                      {s.status === 'delivered' ? 'Перегляд' : 'Керувати'}
                     </button>
                   </td>
                 </tr>
@@ -359,6 +399,7 @@ export default function ShipmentsPage() {
               id="sh-a"
               required
               rows={2}
+              maxLength={512}
               className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
               value={form.address_pickup}
               onChange={(e) => setForm((f) => ({ ...f, address_pickup: e.target.value }))}
@@ -373,6 +414,7 @@ export default function ShipmentsPage() {
               id="sh-b"
               required
               rows={2}
+              maxLength={512}
               className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
               value={form.address_delivery}
               onChange={(e) => setForm((f) => ({ ...f, address_delivery: e.target.value }))}
@@ -388,8 +430,8 @@ export default function ShipmentsPage() {
               <input
                 id="sh-km"
                 type="number"
-                min="0"
                 step="0.01"
+                inputMode="decimal"
                 required
                 className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
                 value={form.distance_km}
@@ -404,8 +446,8 @@ export default function ShipmentsPage() {
               <input
                 id="sh-w"
                 type="number"
-                min="0"
                 step="0.001"
+                inputMode="decimal"
                 required
                 className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
                 value={form.weight_kg}
@@ -424,8 +466,8 @@ export default function ShipmentsPage() {
               <input
                 id="sh-l"
                 type="number"
-                min="0"
                 step="0.01"
+                inputMode="decimal"
                 required
                 placeholder="Довжина"
                 className="w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
@@ -441,8 +483,8 @@ export default function ShipmentsPage() {
               <input
                 id="sh-wi"
                 type="number"
-                min="0"
                 step="0.01"
+                inputMode="decimal"
                 required
                 placeholder="Ширина"
                 className="w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
@@ -458,8 +500,8 @@ export default function ShipmentsPage() {
               <input
                 id="sh-h"
                 type="number"
-                min="0"
                 step="0.01"
+                inputMode="decimal"
                 required
                 placeholder="Висота"
                 className="w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"

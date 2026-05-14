@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { apiFetch } from '../api.js';
 import ConfirmModal from '../components/ConfirmModal.jsx';
 import Modal from '../components/Modal.jsx';
+import { parsePhoneClient, validateRequiredName } from '../utils/formValidation.js';
 
 const emptyForm = { full_name: '', phone: '', available: true };
 
@@ -66,9 +67,21 @@ export default function CouriersPage() {
   async function handleFormSubmit(e) {
     e.preventDefault();
     setFormError('');
+    const nameTrim = form.full_name.trim();
+    const nameErr = validateRequiredName(nameTrim, 'ПІБ кур’єра');
+    if (nameErr) {
+      setFormError(nameErr);
+      return;
+    }
+    const phoneParsed = parsePhoneClient(form.phone);
+    if (phoneParsed.error) {
+      setFormError(phoneParsed.error);
+      return;
+    }
+
     setFormSubmitting(true);
     try {
-      const body = { full_name: form.full_name, phone: form.phone, available: form.available };
+      const body = { full_name: nameTrim, phone: phoneParsed.value, available: form.available };
       if (formMode === 'create') {
         await apiFetch('/api/couriers', { method: 'POST', body });
       } else {
@@ -121,51 +134,70 @@ export default function CouriersPage() {
         </p>
       ) : null}
 
-      <section className="mt-6 overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-card">
-        <table className="min-w-full text-left text-sm">
-          <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase text-ink-muted">
+      <section className="mt-6 w-full overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-card">
+        <table className="w-full min-w-[48rem] table-fixed border-collapse text-center text-sm">
+          <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-ink-muted">
             <tr>
-              <th className="px-4 py-3">ПІБ</th>
-              <th className="px-4 py-3">Телефон</th>
-              <th className="px-4 py-3">Доступний</th>
-              <th className="px-4 py-3 text-right">Дії</th>
+              <th className="w-[30%] px-3 py-3 sm:px-4">ПІБ</th>
+              <th className="w-[22%] px-3 py-3 sm:px-4">Телефон</th>
+              <th className="w-[18%] px-3 py-3 sm:px-4">Доступний</th>
+              <th className="w-[30%] px-3 py-3 sm:px-4">Дії</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={4} className="px-4 py-6 text-ink-muted">
+                <td colSpan={4} className="px-4 py-6 text-center text-ink-muted">
                   Завантаження…
                 </td>
               </tr>
             ) : couriers.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-4 py-6 text-ink-muted">
+                <td colSpan={4} className="px-4 py-6 text-center text-ink-muted">
                   Поки що немає кур’єрів.
                 </td>
               </tr>
             ) : (
               couriers.map((c) => (
                 <tr key={c.id} className="border-b border-slate-100 last:border-0">
-                  <td className="px-4 py-3 font-medium text-ink">{c.full_name}</td>
-                  <td className="px-4 py-3 text-ink-muted">{c.phone}</td>
-                  <td className="px-4 py-3 text-ink-muted">{c.available ? 'Так' : 'Ні'}</td>
-                  <td className="px-4 py-3 text-right">
-                    <button
-                      type="button"
-                      className="text-brand-600 hover:text-brand-800"
-                      onClick={() => openEdit(c)}
+                  <td className="px-3 py-3 align-middle sm:px-4">
+                    <span className="mx-auto block max-w-full truncate font-medium text-ink" title={c.full_name}>
+                      {c.full_name}
+                    </span>
+                  </td>
+                  <td className="px-3 py-3 align-middle font-mono tabular-nums text-ink-muted sm:px-4">
+                    <span className="mx-auto block max-w-full truncate" title={c.phone}>
+                      {c.phone}
+                    </span>
+                  </td>
+                  <td className="px-3 py-3 align-middle sm:px-4">
+                    <span
+                      className={
+                        c.available
+                          ? 'inline-flex rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-800 ring-1 ring-inset ring-emerald-200'
+                          : 'inline-flex rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600 ring-1 ring-inset ring-slate-200'
+                      }
                     >
-                      Змінити
-                    </button>
-                    <span className="mx-2 text-slate-300">|</span>
-                    <button
-                      type="button"
-                      className="text-red-600 hover:text-red-800"
-                      onClick={() => setDeleteTarget({ id: c.id, name: c.full_name })}
-                    >
-                      Видалити
-                    </button>
+                      {c.available ? 'Так' : 'Ні'}
+                    </span>
+                  </td>
+                  <td className="px-3 py-3 align-middle sm:px-4">
+                    <div className="flex flex-wrap items-center justify-center gap-2">
+                      <button
+                        type="button"
+                        className="text-brand-600 hover:text-brand-800"
+                        onClick={() => openEdit(c)}
+                      >
+                        Змінити
+                      </button>
+                      <button
+                        type="button"
+                        className="text-red-600 hover:text-red-800"
+                        onClick={() => setDeleteTarget({ id: c.id, name: c.full_name })}
+                      >
+                        Видалити
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
@@ -212,6 +244,7 @@ export default function CouriersPage() {
             <input
               id="courier-name"
               required
+              maxLength={255}
               className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
               value={form.full_name}
               onChange={(e) => setForm((f) => ({ ...f, full_name: e.target.value }))}
@@ -225,7 +258,10 @@ export default function CouriersPage() {
             <input
               id="courier-phone"
               required
-              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+              inputMode="tel"
+              autoComplete="tel"
+              maxLength={32}
+              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-mono tabular-nums"
               value={form.phone}
               onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
               disabled={formSubmitting}

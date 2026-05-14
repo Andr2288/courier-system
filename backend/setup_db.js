@@ -129,7 +129,7 @@ function seedCalculatedPrice(distanceKm, weightKg) {
 
 /**
  * Сід: по 8 записів для основних довідників і відправлень (діапазон 5–10).
- * route_logs — лише для консистентності статусів; ratings/complaints — точково для демо аналітики.
+ * route_logs — лише для консистентності статусів; ratings/complaints (відгуки) — точково для демо аналітики.
  */
 async function insertSeedData(conn) {
   const adminHash = await bcrypt.hash('admin123', 10);
@@ -170,26 +170,26 @@ async function insertSeedData(conn) {
 
   await conn.query(
     `INSERT INTO couriers (full_name, phone, available) VALUES
-     ('Іваненко Петро', '+380501112233', 1),
-     ('Коваленко Олена', '+380672223344', 1),
-     ('Бондаренко Максим', '+380631112200', 1),
-     ('Мельник Ірина', '+380501112201', 0),
-     ('Шевченко Андрій', '+380671112202', 1),
-     ('Ткаченко Світлана', '+380931112203', 1),
-     ('Лисенко Олег', '+380501112204', 0),
-     ('Марченко Наталія', '+380671112205', 1)`,
+     ('Іваненко Петро', '380501112233', 1),
+     ('Коваленко Олена', '380672223344', 1),
+     ('Бондаренко Максим', '380631112200', 1),
+     ('Мельник Ірина', '380501112201', 0),
+     ('Шевченко Андрій', '380671112202', 1),
+     ('Ткаченко Світлана', '380931112203', 1),
+     ('Лисенко Олег', '380501112204', 0),
+     ('Марченко Наталія', '380671112205', 1)`,
   );
 
   await conn.query(
     `INSERT INTO clients (name, phone, email) VALUES
-     ('ТОВ «Приклад»', '+380443334455', 'office@example.test'),
-     ('Приватна особа', '+380993334455', NULL),
-     ('ФОП Гордієнко', '+380501112300', 'gord@example.test'),
-     ('ТОВ «Логіст Плюс»', '+380442223300', 'ops@logist-plus.test'),
-     ('ТОВ «АгроСхід»', '+380672223311', NULL),
-     ('Іванов Сергій', '+380931112322', 'ivanov@example.test'),
-     ('ТОВ «Медтех»', '+380501112333', 'supply@medtech.test'),
-     ('Крамаренко Людмила', '+380671112344', NULL)`,
+     ('ТОВ «Приклад»', '380443334455', 'office@example.test'),
+     ('Приватна особа', '380993334455', NULL),
+     ('ФОП Гордієнко', '380501112300', 'gord@example.test'),
+     ('ТОВ «Логіст Плюс»', '380442223300', 'ops@logist-plus.test'),
+     ('ТОВ «АгроСхід»', '380672223311', NULL),
+     ('Іванов Сергій', '380931112322', 'ivanov@example.test'),
+     ('ТОВ «Медтех»', '380501112333', 'supply@medtech.test'),
+     ('Крамаренко Людмила', '380671112344', NULL)`,
   );
 
   const shipmentsSpec = [
@@ -385,8 +385,8 @@ async function insertSeedData(conn) {
 
   await conn.query(
     `INSERT INTO complaints (shipment_id, courier_id, body) VALUES
-     (8, 8, 'Затримка на 45 хв без попередження (демо-скарга).'),
-     (7, 6, 'Короткий коментар для перевірки списку скарг.')`,
+     (8, 8, 'Затримка на 45 хв без попередження (демо-відгук).'),
+     (7, 6, 'Короткий коментар для перевірки списку відгуків.')`,
   );
 }
 
@@ -425,7 +425,7 @@ async function actionInit() {
     console.log('  admin / admin123 — роль admin');
     console.log('  dispatcher01 … dispatcher07 / dispatch123 — роль dispatcher');
     console.log('Сід: по 8 записів users (1 admin + 7 dispatcher), tariffs, couriers, clients, shipments+packages;');
-    console.log('      route_logs для історії; 2 ratings та 2 complaints — демо для аналітики/скарг.\n');
+    console.log('      route_logs для історії; 2 ratings та 2 відгуки (таблиця complaints) — демо для аналітики.\n');
   } finally {
     await conn.end();
   }

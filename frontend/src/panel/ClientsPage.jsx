@@ -3,6 +3,11 @@ import { useCallback, useEffect, useState } from 'react';
 import { apiFetch } from '../api.js';
 import ConfirmModal from '../components/ConfirmModal.jsx';
 import Modal from '../components/Modal.jsx';
+import {
+  parseOptionalEmailClient,
+  parsePhoneClient,
+  validateRequiredName,
+} from '../utils/formValidation.js';
 
 const emptyForm = { name: '', phone: '', email: '' };
 
@@ -62,9 +67,26 @@ export default function ClientsPage() {
   async function handleFormSubmit(e) {
     e.preventDefault();
     setFormError('');
+    const nameTrim = form.name.trim();
+    const nameErr = validateRequiredName(nameTrim, 'назву клієнта');
+    if (nameErr) {
+      setFormError(nameErr);
+      return;
+    }
+    const phoneParsed = parsePhoneClient(form.phone);
+    if (phoneParsed.error) {
+      setFormError(phoneParsed.error);
+      return;
+    }
+    const emailParsed = parseOptionalEmailClient(form.email);
+    if (emailParsed.error) {
+      setFormError(emailParsed.error);
+      return;
+    }
+
     setFormSubmitting(true);
     try {
-      const body = { name: form.name, phone: form.phone, email: form.email || null };
+      const body = { name: nameTrim, phone: phoneParsed.value, email: emailParsed.value };
       if (formMode === 'create') {
         await apiFetch('/api/clients', { method: 'POST', body });
       } else {
@@ -117,51 +139,64 @@ export default function ClientsPage() {
         </p>
       ) : null}
 
-      <section className="mt-6 overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-card">
-        <table className="min-w-full text-left text-sm">
-          <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase text-ink-muted">
+      <section className="mt-6 w-full overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-card">
+        <table className="w-full min-w-[48rem] table-fixed border-collapse text-center text-sm">
+          <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-ink-muted">
             <tr>
-              <th className="px-4 py-3">Назва</th>
-              <th className="px-4 py-3">Телефон</th>
-              <th className="px-4 py-3">Email</th>
-              <th className="px-4 py-3 text-right">Дії</th>
+              <th className="w-[32%] px-3 py-3 sm:px-4">Назва</th>
+              <th className="w-[22%] px-3 py-3 sm:px-4">Телефон</th>
+              <th className="w-[26%] px-3 py-3 sm:px-4">Email</th>
+              <th className="w-[20%] px-3 py-3 sm:px-4">Дії</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={4} className="px-4 py-6 text-ink-muted">
+                <td colSpan={4} className="px-4 py-6 text-center text-ink-muted">
                   Завантаження…
                 </td>
               </tr>
             ) : clients.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-4 py-6 text-ink-muted">
+                <td colSpan={4} className="px-4 py-6 text-center text-ink-muted">
                   Поки що немає клієнтів.
                 </td>
               </tr>
             ) : (
               clients.map((c) => (
                 <tr key={c.id} className="border-b border-slate-100 last:border-0">
-                  <td className="px-4 py-3 font-medium text-ink">{c.name}</td>
-                  <td className="px-4 py-3 text-ink-muted">{c.phone}</td>
-                  <td className="px-4 py-3 text-ink-muted">{c.email ?? '—'}</td>
-                  <td className="px-4 py-3 text-right">
-                    <button
-                      type="button"
-                      className="text-brand-600 hover:text-brand-800"
-                      onClick={() => openEdit(c)}
-                    >
-                      Змінити
-                    </button>
-                    <span className="mx-2 text-slate-300">|</span>
-                    <button
-                      type="button"
-                      className="text-red-600 hover:text-red-800"
-                      onClick={() => setDeleteTarget({ id: c.id, name: c.name })}
-                    >
-                      Видалити
-                    </button>
+                  <td className="px-3 py-3 align-middle sm:px-4">
+                    <span className="mx-auto block max-w-full truncate font-medium text-ink" title={c.name}>
+                      {c.name}
+                    </span>
+                  </td>
+                  <td className="px-3 py-3 align-middle font-mono tabular-nums text-ink-muted sm:px-4">
+                    <span className="mx-auto block max-w-full truncate" title={c.phone}>
+                      {c.phone}
+                    </span>
+                  </td>
+                  <td className="px-3 py-3 align-middle text-ink-muted sm:px-4">
+                    <span className="mx-auto block max-w-full truncate text-sm" title={c.email ?? ''}>
+                      {c.email ?? '—'}
+                    </span>
+                  </td>
+                  <td className="px-3 py-3 align-middle sm:px-4">
+                    <div className="flex flex-wrap items-center justify-center gap-2">
+                      <button
+                        type="button"
+                        className="text-brand-600 hover:text-brand-800"
+                        onClick={() => openEdit(c)}
+                      >
+                        Змінити
+                      </button>
+                      <button
+                        type="button"
+                        className="text-red-600 hover:text-red-800"
+                        onClick={() => setDeleteTarget({ id: c.id, name: c.name })}
+                      >
+                        Видалити
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
@@ -208,6 +243,7 @@ export default function ClientsPage() {
             <input
               id="client-name"
               required
+              maxLength={255}
               className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
@@ -221,7 +257,10 @@ export default function ClientsPage() {
             <input
               id="client-phone"
               required
-              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+              inputMode="tel"
+              autoComplete="tel"
+              maxLength={32}
+              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-mono tabular-nums"
               value={form.phone}
               onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
               disabled={formSubmitting}
@@ -234,6 +273,8 @@ export default function ClientsPage() {
             <input
               id="client-email"
               type="email"
+              inputMode="email"
+              maxLength={255}
               className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
               value={form.email}
               onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}

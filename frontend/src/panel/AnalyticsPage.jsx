@@ -40,7 +40,7 @@ export default function AnalyticsPage() {
       <h1 className="text-2xl font-semibold text-ink">Аналітика кур’єрів</h1>
       <p className="mt-1 text-sm text-ink-muted">
         Середній рейтинг за відправленнями кур’єра, середній час доставки (завершені відправлення) та
-        кількість скарг за прив’язкою до відправлення.
+        кількість текстових відгуків за прив’язкою до відправлення.
       </p>
 
       {error ? (
@@ -49,20 +49,20 @@ export default function AnalyticsPage() {
         </p>
       ) : null}
 
-      <div className="mt-6 overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-card">
-        <table className="min-w-full divide-y divide-slate-200 text-sm">
-          <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-ink-muted">
+      <section className="mt-6 w-full overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-card">
+        <table className="w-full min-w-[64rem] table-fixed border-collapse text-center text-sm">
+          <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-ink-muted">
             <tr>
-              <th className="px-4 py-3">Кур’єр</th>
-              <th className="px-4 py-3">Телефон</th>
-              <th className="px-4 py-3">Доступний</th>
-              <th className="px-4 py-3">Завершено доставок</th>
-              <th className="px-4 py-3">Середній рейтинг</th>
-              <th className="px-4 py-3">Середній час доставки</th>
-              <th className="px-4 py-3">Скарги</th>
+              <th className="w-[20%] px-3 py-3 sm:px-4">Кур’єр</th>
+              <th className="w-[14%] px-3 py-3 sm:px-4">Телефон</th>
+              <th className="w-[10%] px-3 py-3 sm:px-4">Доступний</th>
+              <th className="w-[12%] px-3 py-3 sm:px-4">Завершено доставок</th>
+              <th className="w-[12%] px-3 py-3 sm:px-4">Середній рейтинг</th>
+              <th className="w-[18%] px-3 py-3 sm:px-4">Середній час доставки</th>
+              <th className="w-[14%] px-3 py-3 sm:px-4">Відгуки</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 text-ink">
+          <tbody className="text-ink">
             {loading ? (
               <tr>
                 <td colSpan={7} className="px-4 py-8 text-center text-ink-muted">
@@ -77,22 +77,48 @@ export default function AnalyticsPage() {
               </tr>
             ) : (
               couriers.map((c) => (
-                <tr key={c.id} className="hover:bg-slate-50/80">
-                  <td className="px-4 py-3 font-medium">{c.full_name}</td>
-                  <td className="px-4 py-3 text-ink-muted">{c.phone}</td>
-                  <td className="px-4 py-3">{c.available ? 'Так' : 'Ні'}</td>
-                  <td className="px-4 py-3">{c.completed_deliveries}</td>
-                  <td className="px-4 py-3">
+                <tr key={c.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/80">
+                  <td className="px-3 py-3 align-middle sm:px-4">
+                    <span className="mx-auto block max-w-full truncate font-medium" title={c.full_name}>
+                      {c.full_name}
+                    </span>
+                  </td>
+                  <td className="px-3 py-3 align-middle font-mono tabular-nums text-ink-muted sm:px-4">
+                    <span className="mx-auto block max-w-full truncate" title={c.phone}>
+                      {c.phone}
+                    </span>
+                  </td>
+                  <td className="px-3 py-3 align-middle sm:px-4">
+                    <span
+                      className={
+                        c.available
+                          ? 'inline-flex rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-800 ring-1 ring-inset ring-emerald-200'
+                          : 'inline-flex rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600 ring-1 ring-inset ring-slate-200'
+                      }
+                    >
+                      {c.available ? 'Так' : 'Ні'}
+                    </span>
+                  </td>
+                  <td className="px-3 py-3 align-middle font-mono tabular-nums text-ink-muted sm:px-4">
+                    {c.completed_deliveries}
+                  </td>
+                  <td className="px-3 py-3 align-middle font-mono tabular-nums text-ink-muted sm:px-4">
                     {c.avg_rating != null ? c.avg_rating.toFixed(2) : '—'}
                   </td>
-                  <td className="px-4 py-3">{formatDurationMinutes(c.avg_delivery_minutes)}</td>
-                  <td className="px-4 py-3">{c.complaints_count}</td>
+                  <td className="px-3 py-3 align-middle text-ink-muted sm:px-4">
+                    <span className="mx-auto block max-w-full leading-snug">
+                      {formatDurationMinutes(c.avg_delivery_minutes)}
+                    </span>
+                  </td>
+                  <td className="px-3 py-3 align-middle font-mono tabular-nums text-ink-muted sm:px-4">
+                    {c.complaints_count}
+                  </td>
                 </tr>
               ))
             )}
           </tbody>
         </table>
-      </div>
+      </section>
     </div>
   );
 }

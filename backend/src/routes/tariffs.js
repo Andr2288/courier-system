@@ -4,6 +4,7 @@ import { pool } from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
 import { requireAdmin } from '../middleware/requireAdmin.js';
 import { parseIdParam } from '../util/ids.js';
+import { normalizeDecimalInput } from '../util/numbers.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -12,7 +13,7 @@ function parseMoney(value, fieldLabel) {
   if (value === undefined || value === null || value === '') {
     return { error: `Вкажіть ${fieldLabel}.` };
   }
-  const n = Number(value);
+  const n = Number(normalizeDecimalInput(value));
   if (!Number.isFinite(n) || n < 0) {
     return { error: `${fieldLabel} має бути невід’ємним числом.` };
   }

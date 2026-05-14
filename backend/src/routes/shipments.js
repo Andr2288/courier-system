@@ -9,6 +9,7 @@ import {
   generateTrackingCode,
   MAX_TRACKING_ATTEMPTS,
 } from '../services/shipmentService.js';
+import { normalizeDecimalInput } from '../util/numbers.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -103,7 +104,7 @@ router.get('/:id', async (req, res, next) => {
     const [logRows] = await pool.query(
       `SELECT id, event_type, comment, created_at
        FROM route_logs WHERE shipment_id = ?
-       ORDER BY created_at ASC, id ASC`,
+       ORDER BY created_at DESC, id DESC`,
       [id],
     );
 
@@ -125,7 +126,7 @@ router.get('/:id', async (req, res, next) => {
       package: pkg,
       route_logs: logRows,
       rating,
-      complaints: complaintRows,
+      feedbacks: complaintRows,
     });
   } catch (err) {
     next(err);
@@ -133,7 +134,11 @@ router.get('/:id', async (req, res, next) => {
 });
 
 function parsePositiveDecimal(value, label) {
-  const n = Number(value);
+  const raw = normalizeDecimalInput(value);
+  if (!raw) {
+    return { error: `Вкажіть ${label}.` };
+  }
+  const n = Number(raw);
   if (!Number.isFinite(n) || n <= 0) {
     return { error: `${label} має бути додатним числом.` };
   }
@@ -421,87 +426,6 @@ router.post('/:id/events', async (req, res, next) => {
     }
 
     return res.status(204).send();
-  } catch (err) {
-    next(err);
-  }
-});
-
-router.post('/:id/rating', async (req, res, next) => {
-  try {
-    const id = parseIdParam(req, res);
-    if (id === null) return;
-
-    const raw = req.body?.score;
-    const score = Number(raw);
-    if (!Number.isInteger(score) || score < 1 || score > 5) {
-      return res.status(400).json({ error: 'Оцінка має бути цілим числом від 1 до 5.' });
-    }
-
-    const [[ship]] = await pool.query(`SELECT id, status FROM shipments WHERE id = ? LIMIT 1`, [id]);
-    if (!ship) {
-      return res.status(404).json({ error: 'Відправлення не знайдено.' });
-    }
-    if (ship.status !== SHIPMENT_STATUS.DELIVERED) {
-      return res
-        .status(400)
-        .json({ error: 'Оцінку можна залишити лише після доставки відправлення.' });
-    }
-
-    await pool.query(
-      `INSERT INTO ratings (shipment_id, score) VALUES (?, ?)
-       ON DUPLICATE KEY UPDATE score = VALUES(score)`,
-      [id, score],
-    );
-
-    return res.status(204).send();
-  } catch (err) {
-    next(err);
-  }
-});
-
-router.post('/:id/complaints', async (req, res, next) => {
-  try {
-    const id = parseIdParam(req, res);
-    if (id === null) return;
-
-    const bodyText = typeof req.body?.body === 'string' ? req.body.body.trim() : '';
-    if (bodyText.length < 3) {
-      return res.status(400).json({ error: 'Текст скарги має бути не коротшим за 3 символи.' });
-    }
-    if (bodyText.length > 16000) {
-      return res.status(400).json({ error: 'Текст скарги занадто довгий.' });
-    }
-
-    const [[ship]] = await pool.query(
-      `SELECT id, courier_id FROM shipments WHERE id = ? LIMIT 1`,
-      [id],
-    );
-    if (!ship) {
-      return res.status(404).json({ error: 'Відправлення не знайдено.' });
-    }
-
-    const rawCourierId = ship.courier_id;
-    let courierId = null;
-    if (rawCourierId != null && rawCourierId !== '') {
-      const n = Number(rawCourierId);
-      if (Number.isFinite(n) && n > 0) {
-        courierId = Math.trunc(n);
-      }
-    }
-
-    const [ins] = await pool.query(
-      `INSERT INTO complaints (shipment_id, courier_id, body) VALUES (?, ?, ?)`,
-      [id, courierId, bodyText],
-    );
-
-    const insertId = ins.insertId;
-    const [[created]] = await pool.query(
-      `SELECT id, shipment_id, courier_id, body, created_at
-       FROM complaints WHERE id = ? LIMIT 1`,
-      [insertId],
-    );
-
-    return res.status(201).json({ complaint: created });
   } catch (err) {
     next(err);
   }

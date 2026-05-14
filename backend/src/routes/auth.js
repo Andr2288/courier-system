@@ -17,6 +17,9 @@ router.post('/login', async (req, res, next) => {
     }
 
     const trimmedLogin = login.trim();
+    if (trimmedLogin.length > 64) {
+      return res.status(400).json({ error: 'Логін занадто довгий.' });
+    }
 
     const [rows] = await pool.query(
       'SELECT id, login, password_hash, role FROM users WHERE login = ? LIMIT 1',

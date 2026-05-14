@@ -31,10 +31,6 @@ export default function ShipmentManageModal({ shipmentId, isOpen, onClose, onUpd
   const [eventType, setEventType] = useState('picked_up');
   const [eventComment, setEventComment] = useState('');
   const [eventSubmitting, setEventSubmitting] = useState(false);
-  const [ratingScore, setRatingScore] = useState('5');
-  const [ratingSubmitting, setRatingSubmitting] = useState(false);
-  const [complaintBody, setComplaintBody] = useState('');
-  const [complaintSubmitting, setComplaintSubmitting] = useState(false);
 
   const load = useCallback(async () => {
     if (!shipmentId) return;
@@ -48,8 +44,6 @@ export default function ShipmentManageModal({ shipmentId, isOpen, onClose, onUpd
       setDetail(shipData);
       setCouriers((courierData.couriers ?? []).filter((c) => c.available));
       setCourierId(String(shipData.shipment?.courier_id ?? ''));
-      setRatingScore(String(shipData.rating?.score ?? '5'));
-      setComplaintBody('');
     } catch (e) {
       setDetail(null);
       setError(e.message || 'Не вдалося завантажити дані.');
@@ -70,7 +64,7 @@ export default function ShipmentManageModal({ shipmentId, isOpen, onClose, onUpd
   const isDelivered = status === 'delivered';
 
   function handleClose() {
-    if (assigning || eventSubmitting || ratingSubmitting || complaintSubmitting) return;
+    if (assigning || eventSubmitting) return;
     onClose();
   }
 
@@ -119,58 +113,10 @@ export default function ShipmentManageModal({ shipmentId, isOpen, onClose, onUpd
     }
   }
 
-  async function handleRating(e) {
-    e.preventDefault();
-    const score = Number(ratingScore);
-    if (!Number.isInteger(score) || score < 1 || score > 5) {
-      setError('Оберіть оцінку від 1 до 5.');
-      return;
-    }
-    setError('');
-    setRatingSubmitting(true);
-    try {
-      await apiFetch(`/api/shipments/${shipmentId}/rating`, {
-        method: 'POST',
-        body: { score },
-      });
-      await load();
-      onUpdated?.();
-    } catch (err) {
-      setError(err.message || 'Не вдалося зберегти оцінку.');
-    } finally {
-      setRatingSubmitting(false);
-    }
-  }
-
-  async function handleComplaint(e) {
-    e.preventDefault();
-    const text = complaintBody.trim();
-    if (text.length < 3) {
-      setError('Текст скарги має містити щонайменше 3 символи.');
-      return;
-    }
-    setError('');
-    setComplaintSubmitting(true);
-    try {
-      await apiFetch(`/api/shipments/${shipmentId}/complaints`, {
-        method: 'POST',
-        body: { body: text },
-      });
-      setComplaintBody('');
-      await load();
-      onUpdated?.();
-    } catch (err) {
-      setError(err.message || 'Не вдалося зберегти скаргу.');
-    } finally {
-      setComplaintSubmitting(false);
-    }
-  }
-
   const s = detail?.shipment;
   const pkg = detail?.package;
   const logs = detail?.route_logs ?? [];
-  const rating = detail?.rating ?? null;
-  const complaints = detail?.complaints ?? [];
+  const feedbacks = detail?.feedbacks ?? [];
 
   return (
     <Modal
@@ -182,7 +128,7 @@ export default function ShipmentManageModal({ shipmentId, isOpen, onClose, onUpd
         <div className="flex justify-end">
           <button
             type="button"
-            disabled={assigning || eventSubmitting || ratingSubmitting || complaintSubmitting}
+            disabled={assigning || eventSubmitting}
             className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-ink hover:bg-slate-50 disabled:opacity-50"
             onClick={handleClose}
           >
@@ -238,6 +184,29 @@ export default function ShipmentManageModal({ shipmentId, isOpen, onClose, onUpd
               </div>
             ) : null}
           </dl>
+
+          <section className="rounded-xl border border-slate-100 bg-slate-50/80 p-4">
+            <h3 className="text-sm font-semibold text-ink">Відгуки клієнта</h3>
+            <p className="mt-1 text-xs text-ink-muted">
+              Текстові відгуки залишаються на сторінці «Відстеження» за трекінг-кодом. Тут лише перегляд; кілька
+              записів на одне відправлення дозволені. Для аналітики кур’єра враховується прив’язка до відправлення.
+            </p>
+            <ul className="mt-3 max-h-40 space-y-2 overflow-y-auto text-sm">
+              {feedbacks.length === 0 ? (
+                <li className="text-ink-muted">Відгуків ще немає.</li>
+              ) : (
+                feedbacks.map((fb) => (
+                  <li
+                    key={fb.id}
+                    className="rounded-lg border border-slate-100 bg-white px-3 py-2 text-ink-muted"
+                  >
+                    <span className="text-xs">{formatDt(fb.created_at)}</span>
+                    <p className="mt-1 text-sm text-ink">{fb.body}</p>
+                  </li>
+                ))
+              )}
+            </ul>
+          </section>
 
           {!isDelivered ? (
             <>
@@ -313,95 +282,17 @@ export default function ShipmentManageModal({ shipmentId, isOpen, onClose, onUpd
           ) : (
             <div className="space-y-5">
               <p className="text-sm text-ink-muted">
-                Відправлення доставлено — призначення кур’єра та події маршруту змінити не можна.
+                Відправлення доставлено — призначення кур’єра та події маршруту змінити не можна. Оцінку та
+                текстовий відгук клієнт залишає на сторінці «Відстеження» за трекінг-кодом.
               </p>
-
-              <section className="rounded-xl border border-slate-100 bg-slate-50/80 p-4">
-                <h3 className="text-sm font-semibold text-ink">Оцінка доставки (1–5)</h3>
-                <p className="mt-1 text-xs text-ink-muted">
-                  Одна оцінка на відправлення; можна оновити значення пізніше.
+              {detail?.rating ? (
+                <p className="text-sm text-ink">
+                  Поточна оцінка клієнта: <span className="font-semibold">{detail.rating.score}</span> / 5
                 </p>
-                {rating ? (
-                  <p className="mt-2 text-sm text-ink">
-                    Поточна оцінка: <span className="font-semibold">{rating.score}</span> / 5
-                  </p>
-                ) : (
-                  <p className="mt-2 text-sm text-ink-muted">Оцінку ще не залишено.</p>
-                )}
-                <form className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end" onSubmit={handleRating}>
-                  <div className="flex-1">
-                    <label className="block text-xs font-medium text-ink-muted" htmlFor="rating-sel">
-                      Бал
-                    </label>
-                    <select
-                      id="rating-sel"
-                      className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm sm:max-w-[12rem]"
-                      value={ratingScore}
-                      onChange={(e) => setRatingScore(e.target.value)}
-                      disabled={ratingSubmitting}
-                    >
-                      {[1, 2, 3, 4, 5].map((n) => (
-                        <option key={n} value={String(n)}>
-                          {n}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={ratingSubmitting}
-                    className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50"
-                  >
-                    {ratingSubmitting ? 'Збереження…' : rating ? 'Оновити оцінку' : 'Зберегти оцінку'}
-                  </button>
-                </form>
-              </section>
+              ) : (
+                <p className="text-sm text-ink-muted">Клієнт ще не залишив оцінку на сторінці відстеження.</p>
+              )}
 
-              <section className="rounded-xl border border-slate-100 bg-slate-50/80 p-4">
-                <h3 className="text-sm font-semibold text-ink">Скарги</h3>
-                <p className="mt-1 text-xs text-ink-muted">
-                  Можна додати кілька скарг на одне відправлення. До аналітики кур’єра враховуються записи з
-                  прив’язкою до поточного кур’єра відправлення.
-                </p>
-                <ul className="mt-3 max-h-40 space-y-2 overflow-y-auto text-sm">
-                  {complaints.length === 0 ? (
-                    <li className="text-ink-muted">Скарг поки немає.</li>
-                  ) : (
-                    complaints.map((c) => (
-                      <li
-                        key={c.id}
-                        className="rounded-lg border border-slate-100 bg-white px-3 py-2 text-ink-muted"
-                      >
-                        <span className="text-xs">{formatDt(c.created_at)}</span>
-                        <p className="mt-1 text-sm text-ink">{c.body}</p>
-                      </li>
-                    ))
-                  )}
-                </ul>
-                <form className="mt-4 grid gap-3" onSubmit={handleComplaint}>
-                  <div>
-                    <label className="block text-xs font-medium text-ink-muted" htmlFor="complaint-ta">
-                      Текст скарги
-                    </label>
-                    <textarea
-                      id="complaint-ta"
-                      rows={3}
-                      className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                      value={complaintBody}
-                      onChange={(e) => setComplaintBody(e.target.value)}
-                      disabled={complaintSubmitting}
-                      placeholder="Опишіть суть скарги…"
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={complaintSubmitting}
-                    className="w-full rounded-lg bg-brand-500 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50 sm:w-auto"
-                  >
-                    {complaintSubmitting ? 'Збереження…' : 'Зареєструвати скаргу'}
-                  </button>
-                </form>
-              </section>
             </div>
           )}
 

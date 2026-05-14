@@ -3,13 +3,14 @@ import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 import { loginRequest } from '../api.js';
 import { useSession } from '../context/SessionContext.jsx';
+import { validateLoginForm } from '../utils/formValidation.js';
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, loading, establishSession } = useSession();
 
-  const from = location.state?.from || '/panel';
+  const from = location.state?.from || '/panel/shipments';
 
   const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
@@ -17,18 +18,23 @@ export default function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
 
   if (!loading && user) {
-    const target = typeof from === 'string' && from.startsWith('/') ? from : '/panel';
+    const target = typeof from === 'string' && from.startsWith('/') ? from : '/panel/shipments';
     return <Navigate to={target} replace />;
   }
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
+    const v = validateLoginForm(login, password);
+    if (v) {
+      setError(v);
+      return;
+    }
     setSubmitting(true);
     try {
-      const data = await loginRequest(login, password);
+      const data = await loginRequest(login.trim(), password);
       establishSession(data.token, data.user);
-      const target = typeof from === 'string' && from.startsWith('/') ? from : '/panel';
+      const target = typeof from === 'string' && from.startsWith('/') ? from : '/panel/shipments';
       navigate(target, { replace: true });
     } catch (err) {
       setError(err.message || 'Помилка входу.');
@@ -52,6 +58,7 @@ export default function LoginPage() {
               id="login"
               name="login"
               autoComplete="username"
+              maxLength={64}
               className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ring-brand-500/30 transition focus:border-brand-400 focus:ring-2"
               value={login}
               onChange={(e) => setLogin(e.target.value)}
@@ -67,6 +74,7 @@ export default function LoginPage() {
               name="password"
               type="password"
               autoComplete="current-password"
+              maxLength={128}
               className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ring-brand-500/30 transition focus:border-brand-400 focus:ring-2"
               value={password}
               onChange={(e) => setPassword(e.target.value)}

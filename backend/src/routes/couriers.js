@@ -4,6 +4,7 @@ import { ACTIVE_SHIPMENT_IN_SQL, ACTIVE_SHIPMENT_STATUSES } from '../constants/s
 import { pool } from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
 import { parseIdParam } from '../util/ids.js';
+import { parsePhoneForDb } from '../util/contactValidation.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -65,9 +66,13 @@ router.post('/', async (req, res, next) => {
       return res.status(400).json({ error: 'Вкажіть телефон.' });
     }
     const nameTrim = full_name.trim();
-    const phoneTrim = phone.trim();
-    if (nameTrim.length > 255 || phoneTrim.length > 32) {
-      return res.status(400).json({ error: 'Занадто довге значення поля.' });
+    if (nameTrim.length > 255) {
+      return res.status(400).json({ error: 'Занадто довге ПІБ кур’єра.' });
+    }
+
+    const phoneParsed = parsePhoneForDb(phone);
+    if (phoneParsed.error) {
+      return res.status(400).json({ error: phoneParsed.error });
     }
 
     const available = parseAvailable(req.body ?? {});
@@ -77,7 +82,7 @@ router.post('/', async (req, res, next) => {
 
     const [result] = await pool.query(
       `INSERT INTO couriers (full_name, phone, available) VALUES (?, ?, ?)`,
-      [nameTrim, phoneTrim, available],
+      [nameTrim, phoneParsed.value, available],
     );
 
     const [rows] = await pool.query(
@@ -104,19 +109,24 @@ router.put('/:id', async (req, res, next) => {
       return res.status(400).json({ error: 'Вкажіть телефон.' });
     }
     const nameTrim = full_name.trim();
-    const phoneTrim = phone.trim();
+    if (nameTrim.length > 255) {
+      return res.status(400).json({ error: 'Занадто довге ПІБ кур’єра.' });
+    }
+
+    const phoneParsed = parsePhoneForDb(phone);
+    if (phoneParsed.error) {
+      return res.status(400).json({ error: phoneParsed.error });
+    }
+
     const available = parseAvailable(req.body ?? {});
     if (available === null) {
       return res.status(400).json({ error: 'Некоректне поле «доступний».' });
-    }
-    if (nameTrim.length > 255 || phoneTrim.length > 32) {
-      return res.status(400).json({ error: 'Занадто довге значення поля.' });
     }
 
     const [upd] = await pool.query(
       `UPDATE couriers SET full_name = ?, phone = ?, available = ?
        WHERE id = ? AND deleted_at IS NULL`,
-      [nameTrim, phoneTrim, available, id],
+      [nameTrim, phoneParsed.value, available, id],
     );
     if (upd.affectedRows === 0) {
       return res.status(404).json({ error: 'Кур’єра не знайдено.' });
