@@ -188,10 +188,6 @@ export default function ShipmentManageModal({ shipmentId, isOpen, onClose, onUpd
 
             {isDelivered ? (
               <div className="space-y-3 rounded-xl border border-slate-100 bg-slate-50/80 p-4">
-                <p className="text-sm text-ink-muted">
-                  Відправлення доставлено — призначення кур’єра та події маршруту змінити не можна. Оцінку та
-                  текстовий відгук клієнт залишає на сторінці «Відстеження» за трекінг-кодом.
-                </p>
                 {detail?.rating ? (
                   <p className="text-sm text-ink">
                     Поточна оцінка клієнта: <span className="font-semibold">{detail.rating.score}</span> / 5
@@ -287,7 +283,6 @@ export default function ShipmentManageModal({ shipmentId, isOpen, onClose, onUpd
 
           <section className="flex min-h-0 flex-col rounded-xl border border-slate-100 bg-slate-50/80 p-4 lg:sticky lg:top-0 lg:max-h-[min(72vh,560px)]">
             <h3 className="shrink-0 text-sm font-semibold text-ink">Журнал подій</h3>
-            <p className="mt-1 shrink-0 text-xs text-ink-muted">Події маршруту та зміни статусу.</p>
             <ul className="mt-2 min-h-0 flex-1 space-y-2 overflow-y-auto text-sm lg:max-h-none">
               {logs.length === 0 ? (
                 <li className="text-ink-muted">Немає записів.</li>
@@ -313,9 +308,6 @@ export default function ShipmentManageModal({ shipmentId, isOpen, onClose, onUpd
 
           <section className="flex min-h-0 flex-col rounded-xl border border-slate-100 bg-slate-50/80 p-4 lg:sticky lg:top-0 lg:max-h-[min(72vh,560px)]">
             <h3 className="shrink-0 text-sm font-semibold text-ink">Відгуки клієнта</h3>
-            <p className="mt-1 shrink-0 text-xs text-ink-muted">
-              Лише перегляд; клієнт залишає відгуки на «Відстеженні» за трекінг-кодом.
-            </p>
             <ul className="mt-2 min-h-0 flex-1 space-y-2 overflow-y-auto text-sm lg:max-h-none">
               {feedbacks.length === 0 ? (
                 <li className="text-ink-muted">Відгуків ще немає.</li>

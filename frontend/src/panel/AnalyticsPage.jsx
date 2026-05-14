@@ -38,10 +38,6 @@ export default function AnalyticsPage() {
   return (
     <div>
       <h1 className="text-2xl font-semibold text-ink">Аналітика кур’єрів</h1>
-      <p className="mt-1 text-sm text-ink-muted">
-        Середній рейтинг за відправленнями кур’єра, середній час доставки (завершені відправлення) та
-        кількість текстових відгуків за прив’язкою до відправлення.
-      </p>
 
       {error ? (
         <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">

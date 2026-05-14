@@ -46,8 +46,7 @@ export default function LoginPage() {
   return (
     <div className="mx-auto max-w-md px-4 py-16">
       <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-card">
-        <h1 className="text-xl font-semibold text-ink">Вхід диспетчера</h1>
-        <p className="mt-1 text-sm text-ink-muted">JWT-сесія для захищених операцій API.</p>
+        <h1 className="text-xl font-semibold text-ink">Вхід (для диспетчера або адміна)</h1>
 
         <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
           <div>

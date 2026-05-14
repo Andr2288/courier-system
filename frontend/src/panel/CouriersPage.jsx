@@ -115,9 +115,6 @@ export default function CouriersPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-ink">Кур’єри</h1>
-          <p className="mt-1 text-sm text-ink-muted">
-            ПІБ, телефон, доступність. Видалення — якщо немає активних відправлень.
-          </p>
         </div>
         <button
           type="button"
