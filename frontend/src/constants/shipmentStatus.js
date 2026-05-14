@@ -1,4 +1,3 @@
-/** Підписи статусів відправлення (коди з API / БД). */
 export const SHIPMENT_STATUS_LABEL_UK = {
   created: 'Створено',
   assigned: 'Призначено',
@@ -10,10 +9,6 @@ export function shipmentStatusLabel(code) {
   return SHIPMENT_STATUS_LABEL_UK[code] ?? code;
 }
 
-/**
- * Стилі бейджа: синій — створено, жовтий — нейтральне (призначено),
- * помаранчевий — в дорозі, зелений — доставлено.
- */
 export function shipmentStatusBadgeClass(code) {
   const base =
     'inline-flex max-w-full items-center justify-center rounded-md px-2.5 py-0.5 text-xs font-medium';

@@ -1,4 +1,3 @@
-/** Події журналу маршруту (збігаються зі значеннями в БД). */
 export const ROUTE_EVENT = {
   CREATED: 'created',
   COURIER_ASSIGNED: 'courier_assigned',

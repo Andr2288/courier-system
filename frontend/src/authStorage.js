@@ -14,7 +14,6 @@ export function clearToken() {
   localStorage.removeItem(TOKEN_KEY);
 }
 
-/** Викликати після примусового очищення токена (наприклад 401), щоб UI синхронізувався. */
 export function notifySessionCleared() {
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent(SESSION_CLEARED));

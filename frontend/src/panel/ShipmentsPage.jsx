@@ -32,9 +32,6 @@ function formatDt(value) {
   }
 }
 
-/**
- * Одне текстове поле: підказки — адреси з історії, де є збіг із введеним текстом (без урахування регістру).
- */
 function AddressTextFieldWithHints({ id, label, value, onChange, disabled, knownAddresses }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const blurTimerRef = useRef(null);
@@ -173,7 +170,6 @@ export default function ShipmentsPage() {
 
   const canCreate = useMemo(() => clients.length > 0, [clients.length]);
 
-  /** Унікальні адреси з існуючих відправлень (забір + доставка), для підказок у формі. */
   const knownAddresses = useMemo(() => {
     const set = new Set();
     for (const s of shipments) {

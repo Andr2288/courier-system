@@ -1,5 +1,3 @@
--- Таблиці MVP кур'єрської служби (MySQL 8+)
-
 CREATE TABLE users (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   login VARCHAR(64) NOT NULL UNIQUE,

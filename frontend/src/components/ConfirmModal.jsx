@@ -2,9 +2,6 @@ import { useState } from 'react';
 
 import Modal from './Modal.jsx';
 
-/**
- * Підтвердження дії (зокрема видалення) без браузерних alert/confirm.
- */
 export default function ConfirmModal({
   isOpen,
   title,

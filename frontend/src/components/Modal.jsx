@@ -1,8 +1,5 @@
 import { useEffect } from 'react';
 
-/**
- * Базове модальне вікно: Escape, клік по підкладці, блокування прокрутки body.
- */
 export default function Modal({ isOpen, title, onClose, children, footer, widthClass = 'max-w-lg' }) {
   useEffect(() => {
     if (!isOpen) return;

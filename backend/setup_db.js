@@ -118,7 +118,6 @@ async function tableCountInSchema(conn, dbName) {
   return Number(rows[0].c);
 }
 
-/** Тариф «default» у сіді: збігається з першим активним записом для розрахунків. */
 function seedCalculatedPrice(distanceKm, weightKg) {
   const base = 50;
   const perKg = 8;
@@ -127,10 +126,6 @@ function seedCalculatedPrice(distanceKm, weightKg) {
   return Math.round(raw * 100) / 100;
 }
 
-/**
- * Сід: по 8 записів для основних довідників і відправлень (діапазон 5–10).
- * route_logs — лише для консистентності статусів; ratings/complaints (відгуки) — точково для демо аналітики.
- */
 async function insertSeedData(conn) {
   const adminHash = await bcrypt.hash('admin123', 10);
   const dispatchHash = await bcrypt.hash('dispatch123', 10);
@@ -455,7 +450,6 @@ async function mainMenu() {
   const rl = readline.createInterface({ input, output });
 
   try {
-    // Перевірка .env на старті (крім випадку коли користувач лише читає help)
     requireEnv('DB_USER');
     assertSafeDbIdentifier(requireEnv('DB_NAME'));
   } catch (e) {
