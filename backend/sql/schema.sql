@@ -1,0 +1,103 @@
+-- Таблиці MVP кур'єрської служби (MySQL 8+)
+
+CREATE TABLE users (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  login VARCHAR(64) NOT NULL UNIQUE,
+  password_hash VARCHAR(255) NOT NULL,
+  role ENUM('admin', 'dispatcher') NOT NULL DEFAULT 'dispatcher',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE clients (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  phone VARCHAR(32) NOT NULL,
+  email VARCHAR(255) NULL,
+  deleted_at TIMESTAMP NULL DEFAULT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE couriers (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  full_name VARCHAR(255) NOT NULL,
+  phone VARCHAR(32) NOT NULL,
+  available TINYINT(1) NOT NULL DEFAULT 1,
+  deleted_at TIMESTAMP NULL DEFAULT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE tariffs (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  label VARCHAR(128) NOT NULL DEFAULT 'default',
+  base_price DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+  price_per_kg DECIMAL(12, 4) NOT NULL DEFAULT 0.0000,
+  price_per_km DECIMAL(12, 4) NOT NULL DEFAULT 0.0000,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE shipments (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  client_id INT UNSIGNED NOT NULL,
+  tracking_code VARCHAR(32) NOT NULL,
+  address_pickup VARCHAR(512) NOT NULL,
+  address_delivery VARCHAR(512) NOT NULL,
+  distance_km DECIMAL(10, 2) NOT NULL,
+  status VARCHAR(64) NOT NULL DEFAULT 'created',
+  courier_id INT UNSIGNED NULL,
+  calculated_price DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+  delivered_at TIMESTAMP NULL DEFAULT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_shipments_tracking (tracking_code),
+  KEY idx_shipments_client (client_id),
+  KEY idx_shipments_courier (courier_id),
+  CONSTRAINT fk_shipments_client FOREIGN KEY (client_id) REFERENCES clients (id),
+  CONSTRAINT fk_shipments_courier FOREIGN KEY (courier_id) REFERENCES couriers (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE packages (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  shipment_id INT UNSIGNED NOT NULL,
+  length_cm DECIMAL(10, 2) NOT NULL,
+  width_cm DECIMAL(10, 2) NOT NULL,
+  height_cm DECIMAL(10, 2) NOT NULL,
+  weight_kg DECIMAL(10, 3) NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_packages_shipment (shipment_id),
+  CONSTRAINT fk_packages_shipment FOREIGN KEY (shipment_id) REFERENCES shipments (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE route_logs (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  shipment_id INT UNSIGNED NOT NULL,
+  event_type VARCHAR(64) NOT NULL,
+  comment VARCHAR(512) NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_route_logs_shipment (shipment_id),
+  CONSTRAINT fk_route_logs_shipment FOREIGN KEY (shipment_id) REFERENCES shipments (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE ratings (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  shipment_id INT UNSIGNED NOT NULL,
+  score TINYINT UNSIGNED NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_ratings_shipment (shipment_id),
+  CONSTRAINT fk_ratings_shipment FOREIGN KEY (shipment_id) REFERENCES shipments (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE complaints (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  shipment_id INT UNSIGNED NOT NULL,
+  courier_id INT UNSIGNED NULL,
+  body TEXT NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_complaints_shipment (shipment_id),
+  KEY idx_complaints_courier (courier_id),
+  CONSTRAINT fk_complaints_shipment FOREIGN KEY (shipment_id) REFERENCES shipments (id) ON DELETE CASCADE,
+  CONSTRAINT fk_complaints_courier FOREIGN KEY (courier_id) REFERENCES couriers (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

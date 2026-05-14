@@ -1,0 +1,14 @@
+{
+  "name": "courier-delivery-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "setup-db": "node setup_db.js"
+  },
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "dotenv": "^16.4.5",
+    "mysql2": "^3.11.0"
+  }
+}
