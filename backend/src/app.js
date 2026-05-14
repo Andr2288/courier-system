@@ -7,6 +7,7 @@ import clientsRouter from './routes/clients.js';
 import couriersRouter from './routes/couriers.js';
 import shipmentsRouter from './routes/shipments.js';
 import tariffsRouter from './routes/tariffs.js';
+import trackPublicRouter from './routes/trackPublic.js';
 
 export function createApp() {
   const app = express();
@@ -22,6 +23,8 @@ export function createApp() {
   app.get('/api/health', (req, res) => {
     res.json({ ok: true });
   });
+
+  app.use('/api/track', trackPublicRouter);
 
   app.use('/api/auth', authRouter);
   app.use('/api/clients', clientsRouter);

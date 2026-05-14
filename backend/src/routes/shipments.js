@@ -1,6 +1,7 @@
 import { Router } from 'express';
 
 import { pool } from '../db.js';
+import { ROUTE_EVENT, SHIPMENT_STATUS } from '../constants/logistics.js';
 import { requireAuth } from '../middleware/auth.js';
 import { parseIdParam } from '../util/ids.js';
 import {
@@ -58,9 +59,11 @@ router.get('/:id', async (req, res, next) => {
       `SELECT s.id, s.tracking_code, s.status, s.distance_km, s.calculated_price, s.created_at,
               s.updated_at, s.delivered_at, s.client_id, s.courier_id, s.address_pickup, s.address_delivery,
               c.name AS client_name,
+              co.full_name AS courier_name,
               p.id AS package_id, p.weight_kg, p.length_cm, p.width_cm, p.height_cm
        FROM shipments s
        INNER JOIN clients c ON c.id = s.client_id AND c.deleted_at IS NULL
+       LEFT JOIN couriers co ON co.id = s.courier_id AND co.deleted_at IS NULL
        LEFT JOIN packages p ON p.shipment_id = s.id
        WHERE s.id = ?
        LIMIT 1`,
@@ -82,6 +85,7 @@ router.get('/:id', async (req, res, next) => {
       client_id: row.client_id,
       client_name: row.client_name,
       courier_id: row.courier_id,
+      courier_name: row.courier_name ?? null,
       address_pickup: row.address_pickup,
       address_delivery: row.address_delivery,
     };
@@ -94,7 +98,18 @@ router.get('/:id', async (req, res, next) => {
           height_cm: Number(row.height_cm),
         }
       : null;
-    return res.json({ shipment, package: pkg });
+    const [logRows] = await pool.query(
+      `SELECT id, event_type, comment, created_at
+       FROM route_logs WHERE shipment_id = ?
+       ORDER BY created_at ASC, id ASC`,
+      [id],
+    );
+
+    return res.json({
+      shipment,
+      package: pkg,
+      route_logs: logRows,
+    });
   } catch (err) {
     next(err);
   }
@@ -234,6 +249,161 @@ router.post('/', async (req, res, next) => {
     return res.status(201).json({
       shipment: mapShipmentListRow(created),
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/:id/assign', async (req, res, next) => {
+  try {
+    const id = parseIdParam(req, res);
+    if (id === null) return;
+
+    const courierId = Number(req.body?.courier_id);
+    if (!Number.isInteger(courierId) || courierId < 1) {
+      return res.status(400).json({ error: 'Оберіть кур’єра.' });
+    }
+
+    const conn = await pool.getConnection();
+    try {
+      await conn.beginTransaction();
+
+      const [[ship]] = await conn.query(
+        `SELECT id, status, courier_id FROM shipments WHERE id = ? FOR UPDATE`,
+        [id],
+      );
+      if (!ship) {
+        await conn.rollback();
+        return res.status(404).json({ error: 'Відправлення не знайдено.' });
+      }
+      if (ship.status === SHIPMENT_STATUS.DELIVERED) {
+        await conn.rollback();
+        return res.status(409).json({ error: 'Неможливо змінити кур’єра: відправлення вже доставлено.' });
+      }
+
+      const [[courier]] = await conn.query(
+        `SELECT id, full_name FROM couriers WHERE id = ? AND deleted_at IS NULL AND available = 1 LIMIT 1`,
+        [courierId],
+      );
+      if (!courier) {
+        await conn.rollback();
+        return res.status(400).json({ error: 'Кур’єра не знайдено або він недоступний.' });
+      }
+
+      const nextStatus =
+        ship.status === SHIPMENT_STATUS.CREATED ? SHIPMENT_STATUS.ASSIGNED : ship.status;
+
+      await conn.query(
+        `UPDATE shipments SET courier_id = ?, status = ? WHERE id = ?`,
+        [courierId, nextStatus, id],
+      );
+
+      const logComment =
+        ship.courier_id && Number(ship.courier_id) !== courierId
+          ? `Перепризначено на ${courier.full_name}`
+          : `Призначено кур’єра: ${courier.full_name}`;
+
+      await conn.query(
+        `INSERT INTO route_logs (shipment_id, event_type, comment)
+         VALUES (?, ?, ?)`,
+        [id, ROUTE_EVENT.COURIER_ASSIGNED, logComment],
+      );
+
+      await conn.commit();
+    } catch (err) {
+      await conn.rollback();
+      throw err;
+    } finally {
+      conn.release();
+    }
+
+    return res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/:id/events', async (req, res, next) => {
+  try {
+    const id = parseIdParam(req, res);
+    if (id === null) return;
+
+    const eventType = req.body?.event_type;
+    const allowed = [ROUTE_EVENT.PICKED_UP, ROUTE_EVENT.DELIVERED, ROUTE_EVENT.NOTE];
+    if (typeof eventType !== 'string' || !allowed.includes(eventType)) {
+      return res.status(400).json({ error: 'Некоректний тип події.' });
+    }
+
+    let comment =
+      typeof req.body?.comment === 'string' ? req.body.comment.trim().slice(0, 512) : '';
+    if (eventType === ROUTE_EVENT.NOTE && !comment) {
+      return res.status(400).json({ error: 'Для нотатки вкажіть текст.' });
+    }
+
+    const conn = await pool.getConnection();
+    try {
+      await conn.beginTransaction();
+
+      const [[ship]] = await conn.query(
+        `SELECT id, status FROM shipments WHERE id = ? FOR UPDATE`,
+        [id],
+      );
+      if (!ship) {
+        await conn.rollback();
+        return res.status(404).json({ error: 'Відправлення не знайдено.' });
+      }
+      if (ship.status === SHIPMENT_STATUS.DELIVERED) {
+        await conn.rollback();
+        return res.status(409).json({ error: 'Відправлення вже доставлено.' });
+      }
+
+      let logComment = comment || null;
+
+      if (eventType === ROUTE_EVENT.PICKED_UP) {
+        if (ship.status !== SHIPMENT_STATUS.ASSIGNED) {
+          await conn.rollback();
+          return res.status(400).json({
+            error: 'Подію «Забрано» можна додати лише після призначення кур’єра (статус «Призначено»).',
+          });
+        }
+        await conn.query(
+          `UPDATE shipments SET status = ? WHERE id = ?`,
+          [SHIPMENT_STATUS.IN_TRANSIT, id],
+        );
+        if (!logComment) logComment = 'Посилку забрано, в дорозі';
+      } else if (eventType === ROUTE_EVENT.DELIVERED) {
+        if (
+          ship.status !== SHIPMENT_STATUS.ASSIGNED &&
+          ship.status !== SHIPMENT_STATUS.IN_TRANSIT
+        ) {
+          await conn.rollback();
+          return res.status(400).json({
+            error: 'Доставку можна зафіксувати лише зі статусів «Призначено» або «В дорозі».',
+          });
+        }
+        await conn.query(
+          `UPDATE shipments SET status = ?, delivered_at = CURRENT_TIMESTAMP WHERE id = ?`,
+          [SHIPMENT_STATUS.DELIVERED, id],
+        );
+        if (!logComment) logComment = 'Доставлено отримувачу';
+      } else if (eventType === ROUTE_EVENT.NOTE) {
+        // статус без змін
+      }
+
+      await conn.query(
+        `INSERT INTO route_logs (shipment_id, event_type, comment) VALUES (?, ?, ?)`,
+        [id, eventType, logComment],
+      );
+
+      await conn.commit();
+    } catch (err) {
+      await conn.rollback();
+      throw err;
+    } finally {
+      conn.release();
+    }
+
+    return res.status(204).send();
   } catch (err) {
     next(err);
   }

@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 /**
  * Базове модальне вікно: Escape, клік по підкладці, блокування прокрутки body.
  */
-export default function Modal({ isOpen, title, onClose, children, footer }) {
+export default function Modal({ isOpen, title, onClose, children, footer, widthClass = 'max-w-lg' }) {
   useEffect(() => {
     if (!isOpen) return;
     function onKey(e) {
@@ -36,7 +36,7 @@ export default function Modal({ isOpen, title, onClose, children, footer }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby={title ? 'modal-title' : undefined}
-        className="relative z-10 max-h-[min(90vh,640px)] w-full max-w-lg overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-xl"
+        className={`relative z-10 max-h-[min(92vh,720px)] w-full ${widthClass} overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-xl`}
         onClick={(e) => e.stopPropagation()}
       >
         {title ? (

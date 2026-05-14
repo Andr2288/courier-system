@@ -4,7 +4,7 @@ import SiteHeader from './components/SiteHeader.jsx';
 import { AuthGate, SessionProvider } from './context/SessionContext.jsx';
 import HomePage from './pages/HomePage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
-import TrackingPlaceholderPage from './pages/TrackingPlaceholderPage.jsx';
+import TrackingPage from './pages/TrackingPage.jsx';
 import PanelLayout from './panel/PanelLayout.jsx';
 import ClientsPage from './panel/ClientsPage.jsx';
 import CouriersPage from './panel/CouriersPage.jsx';
@@ -21,7 +21,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/login" element={<LoginPage />} />
-            <Route path="/track" element={<TrackingPlaceholderPage />} />
+            <Route path="/track" element={<TrackingPage />} />
             <Route
               path="/panel"
               element={

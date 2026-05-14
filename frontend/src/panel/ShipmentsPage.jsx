@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { apiFetch } from '../api.js';
 import Modal from '../components/Modal.jsx';
+import ShipmentManageModal from './ShipmentManageModal.jsx';
 
 const emptyForm = {
   client_id: '',
@@ -49,6 +50,7 @@ export default function ShipmentsPage() {
   const [form, setForm] = useState(emptyForm);
   const [formError, setFormError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [manageId, setManageId] = useState(null);
 
   const loadShipments = useCallback(async () => {
     setError('');
@@ -133,8 +135,8 @@ export default function ShipmentsPage() {
         <div>
           <h1 className="text-2xl font-semibold text-ink">Відправлення</h1>
           <p className="mt-1 text-sm text-ink-muted">
-            Посилка + маршрут А→Б, ручні км, трекінг-код і вартість за активним тарифом. Подія «створено» у журналі
-            маршруту.
+            Створення, призначення кур’єра, події маршруту та статуси. Публічне відстеження — у пункті «Відстеження»
+            у шапці.
           </p>
         </div>
         <button
@@ -165,51 +167,80 @@ export default function ShipmentsPage() {
         </p>
       ) : null}
 
-      <section className="mt-6 overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-card">
-        <table className="min-w-full text-left text-sm">
+      <section className="mt-6 max-w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
+        <table className="w-full table-fixed border-collapse text-left text-sm">
           <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase text-ink-muted">
             <tr>
-              <th className="px-4 py-3">Трек</th>
-              <th className="px-4 py-3">Клієнт</th>
-              <th className="px-4 py-3">Статус</th>
-              <th className="px-4 py-3">Км</th>
-              <th className="px-4 py-3">Вага</th>
-              <th className="px-4 py-3">Вартість</th>
-              <th className="px-4 py-3">Створено</th>
-              <th className="px-4 py-3">А → Б</th>
+              <th className="w-[10%] px-2 py-3 sm:px-3">Трек</th>
+              <th className="w-[12%] px-2 py-3 sm:px-3">Клієнт</th>
+              <th className="w-[11%] px-2 py-3 sm:px-3">Статус</th>
+              <th className="w-[7%] px-2 py-3 sm:px-3">Км</th>
+              <th className="w-[7%] px-2 py-3 sm:px-3">Вага</th>
+              <th className="w-[9%] px-2 py-3 sm:px-3">Вартість</th>
+              <th className="w-[13%] px-2 py-3 sm:px-3">Створено</th>
+              <th className="w-[21%] px-2 py-3 sm:px-3">А → Б</th>
+              <th className="w-[10%] px-2 py-3 text-right sm:px-3">Дії</th>
             </tr>
           </thead>
           <tbody>
             {listLoading ? (
               <tr>
-                <td colSpan={8} className="px-4 py-6 text-ink-muted">
+                <td colSpan={9} className="px-4 py-6 text-ink-muted">
                   Завантаження…
                 </td>
               </tr>
             ) : shipments.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-4 py-6 text-ink-muted">
+                <td colSpan={9} className="px-4 py-6 text-ink-muted">
                   Поки що немає відправлень.
                 </td>
               </tr>
             ) : (
               shipments.map((s) => (
                 <tr key={s.id} className="border-b border-slate-100 last:border-0">
-                  <td className="whitespace-nowrap px-4 py-3 font-mono text-xs font-medium text-ink">
-                    {s.tracking_code}
+                  <td className="px-2 py-3 font-mono text-xs font-medium text-ink sm:px-3">
+                    <span className="block truncate" title={s.tracking_code}>
+                      {s.tracking_code}
+                    </span>
                   </td>
-                  <td className="max-w-[10rem] truncate px-4 py-3 text-ink-muted" title={s.client_name}>
-                    {s.client_name}
+                  <td className="px-2 py-3 text-ink-muted sm:px-3">
+                    <span className="block truncate" title={s.client_name}>
+                      {s.client_name}
+                    </span>
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-ink-muted">{statusLabel(s.status)}</td>
-                  <td className="whitespace-nowrap px-4 py-3 text-ink-muted">{s.distance_km}</td>
-                  <td className="whitespace-nowrap px-4 py-3 text-ink-muted">{s.weight_kg ?? '—'}</td>
-                  <td className="whitespace-nowrap px-4 py-3 text-ink-muted">{s.calculated_price}</td>
-                  <td className="whitespace-nowrap px-4 py-3 text-ink-muted">{formatDt(s.created_at)}</td>
-                  <td className="max-w-xs px-4 py-3 text-xs text-ink-muted">
-                    <span className="line-clamp-2" title={`${s.address_pickup} → ${s.address_delivery}`}>
+                  <td className="px-2 py-3 text-ink-muted sm:px-3">
+                    <span className="block truncate">{statusLabel(s.status)}</span>
+                  </td>
+                  <td className="px-2 py-3 text-ink-muted sm:px-3">
+                    <span className="block truncate">{s.distance_km}</span>
+                  </td>
+                  <td className="px-2 py-3 text-ink-muted sm:px-3">
+                    <span className="block truncate">{s.weight_kg ?? '—'}</span>
+                  </td>
+                  <td className="px-2 py-3 text-ink-muted sm:px-3">
+                    <span className="block truncate">{s.calculated_price}</span>
+                  </td>
+                  <td className="px-2 py-3 text-xs text-ink-muted sm:px-3">
+                    <span className="line-clamp-2 break-words leading-snug" title={formatDt(s.created_at)}>
+                      {formatDt(s.created_at)}
+                    </span>
+                  </td>
+                  <td className="min-w-0 px-2 py-3 text-xs text-ink-muted sm:px-3">
+                    <span
+                      className="line-clamp-2 break-words leading-snug"
+                      title={`${s.address_pickup} → ${s.address_delivery}`}
+                    >
                       {s.address_pickup} → {s.address_delivery}
                     </span>
+                  </td>
+                  <td className="px-2 py-3 text-right sm:px-3">
+                    <button
+                      type="button"
+                      className="text-brand-600 hover:text-brand-800"
+                      onClick={() => setManageId(s.id)}
+                    >
+                      Керувати
+                    </button>
                   </td>
                 </tr>
               ))
@@ -391,6 +422,13 @@ export default function ShipmentsPage() {
           </div>
         </form>
       </Modal>
+
+      <ShipmentManageModal
+        shipmentId={manageId}
+        isOpen={manageId !== null}
+        onClose={() => setManageId(null)}
+        onUpdated={loadShipments}
+      />
     </div>
   );
 }
