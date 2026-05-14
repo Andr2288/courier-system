@@ -1,4 +1,4 @@
-import { clearToken, getToken } from './authStorage.js';
+import { clearToken, getToken, notifySessionCleared } from './authStorage.js';
 
 async function parseJson(res) {
   try {
@@ -32,9 +32,52 @@ export async function meRequest() {
   const data = await parseJson(res);
   if (res.status === 401) {
     clearToken();
+    notifySessionCleared();
   }
   if (!res.ok) {
     throw new Error(data.error || 'Не вдалося перевірити сесію.');
+  }
+  return data;
+}
+
+/**
+ * Авторизований запит до API. Для 204 без тіла повертає null.
+ * @param {string} path
+ * @param {{ method?: string, body?: unknown }} [options]
+ */
+export async function apiFetch(path, options = {}) {
+  const { method = 'GET', body } = options;
+  const token = getToken();
+  if (!token) {
+    throw new Error('Немає токена.');
+  }
+
+  const headers = { Authorization: `Bearer ${token}` };
+  const init = { method, headers };
+
+  if (body !== undefined && method !== 'GET' && method !== 'HEAD') {
+    headers['Content-Type'] = 'application/json';
+    init.body = JSON.stringify(body);
+  }
+
+  const res = await fetch(path, init);
+  if (res.status === 401) {
+    clearToken();
+    notifySessionCleared();
+  }
+
+  if (res.status === 204) {
+    if (!res.ok) {
+      throw new Error('Помилка запиту.');
+    }
+    return null;
+  }
+
+  const data = await parseJson(res);
+  if (!res.ok) {
+    const err = new Error(data.error || `Помилка ${res.status}`);
+    err.status = res.status;
+    throw err;
   }
   return data;
 }

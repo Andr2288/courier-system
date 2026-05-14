@@ -3,6 +3,9 @@ import cors from 'cors';
 
 import { config } from './config.js';
 import authRouter from './routes/auth.js';
+import clientsRouter from './routes/clients.js';
+import couriersRouter from './routes/couriers.js';
+import tariffsRouter from './routes/tariffs.js';
 
 export function createApp() {
   const app = express();
@@ -20,6 +23,9 @@ export function createApp() {
   });
 
   app.use('/api/auth', authRouter);
+  app.use('/api/clients', clientsRouter);
+  app.use('/api/couriers', couriersRouter);
+  app.use('/api/tariffs', tariffsRouter);
 
   app.use((req, res, next) => {
     if (req.path.startsWith('/api')) {

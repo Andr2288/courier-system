@@ -1,31 +1,39 @@
 import { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 import { loginRequest } from '../api.js';
-import { setToken } from '../authStorage.js';
+import { useSession } from '../context/SessionContext.jsx';
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, loading, establishSession } = useSession();
+
   const from = location.state?.from || '/panel';
 
   const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  if (!loading && user) {
+    const target = typeof from === 'string' && from.startsWith('/') ? from : '/panel';
+    return <Navigate to={target} replace />;
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
-    setLoading(true);
+    setSubmitting(true);
     try {
       const data = await loginRequest(login, password);
-      setToken(data.token);
-      navigate(from, { replace: true });
+      establishSession(data.token, data.user);
+      const target = typeof from === 'string' && from.startsWith('/') ? from : '/panel';
+      navigate(target, { replace: true });
     } catch (err) {
       setError(err.message || 'Помилка входу.');
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   }
 
@@ -47,7 +55,7 @@ export default function LoginPage() {
               className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ring-brand-500/30 transition focus:border-brand-400 focus:ring-2"
               value={login}
               onChange={(e) => setLogin(e.target.value)}
-              disabled={loading}
+              disabled={submitting}
             />
           </div>
           <div>
@@ -62,7 +70,7 @@ export default function LoginPage() {
               className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ring-brand-500/30 transition focus:border-brand-400 focus:ring-2"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              disabled={loading}
+              disabled={submitting}
             />
           </div>
 
@@ -74,10 +82,10 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={submitting}
             className="w-full rounded-lg bg-brand-500 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {loading ? 'Вхід…' : 'Увійти'}
+            {submitting ? 'Вхід…' : 'Увійти'}
           </button>
         </form>
 
