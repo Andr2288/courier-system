@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { apiFetch } from '../api.js';
+import { shipmentStatusBadgeClass, shipmentStatusLabel } from '../constants/shipmentStatus.js';
 import Modal from '../components/Modal.jsx';
 
 const EVENT_LABELS = {
@@ -9,13 +10,6 @@ const EVENT_LABELS = {
   picked_up: 'Забрано',
   delivered: 'Доставлено',
   note: 'Нотатка',
-};
-
-const STATUS_LABELS = {
-  created: 'Створено',
-  assigned: 'Призначено',
-  in_transit: 'В дорозі',
-  delivered: 'Доставлено',
 };
 
 function formatDt(value) {
@@ -211,7 +205,9 @@ export default function ShipmentManageModal({ shipmentId, isOpen, onClose, onUpd
           <dl className="grid gap-2 text-sm sm:grid-cols-2">
             <div>
               <dt className="text-ink-muted">Статус</dt>
-              <dd className="font-medium text-ink">{STATUS_LABELS[s.status] ?? s.status}</dd>
+              <dd className="mt-1">
+                <span className={shipmentStatusBadgeClass(s.status)}>{shipmentStatusLabel(s.status)}</span>
+              </dd>
             </div>
             <div>
               <dt className="text-ink-muted">Вартість</dt>

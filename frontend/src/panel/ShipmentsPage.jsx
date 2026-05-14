@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { apiFetch } from '../api.js';
+import { shipmentStatusBadgeClass, shipmentStatusLabel } from '../constants/shipmentStatus.js';
 import Modal from '../components/Modal.jsx';
 import ShipmentManageModal from './ShipmentManageModal.jsx';
 
@@ -27,17 +28,6 @@ function formatDt(value) {
   }
 }
 
-const statusLabels = {
-  created: 'Створено',
-  assigned: 'Призначено',
-  in_transit: 'В дорозі',
-  delivered: 'Доставлено',
-};
-
-function statusLabel(code) {
-  return statusLabels[code] ?? code;
-}
-
 export default function ShipmentsPage() {
   const [shipments, setShipments] = useState([]);
   const [clients, setClients] = useState([]);
@@ -45,6 +35,8 @@ export default function ShipmentsPage() {
   const [clientsLoading, setClientsLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [copiedShipmentId, setCopiedShipmentId] = useState(null);
+  const [copyError, setCopyError] = useState('');
 
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
@@ -86,6 +78,20 @@ export default function ShipmentsPage() {
   }, [loadClients]);
 
   const canCreate = useMemo(() => clients.length > 0, [clients.length]);
+
+  const copyTrackingCode = useCallback(async (shipmentId, code) => {
+    setCopyError('');
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopiedShipmentId(shipmentId);
+      window.setTimeout(() => {
+        setCopiedShipmentId((cur) => (cur === shipmentId ? null : cur));
+      }, 2000);
+    } catch {
+      setCopyError('Не вдалося скопіювати трек у буфер. Перевірте дозволи браузера.');
+      window.setTimeout(() => setCopyError(''), 4000);
+    }
+  }, []);
 
   function openModal() {
     setForm(emptyForm);
@@ -167,12 +173,18 @@ export default function ShipmentsPage() {
         </p>
       ) : null}
 
+      {copyError ? (
+        <p className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
+          {copyError}
+        </p>
+      ) : null}
+
       <section className="mt-6 w-full overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-card">
         <table className="w-full min-w-[72rem] table-fixed border-collapse text-center text-sm">
           <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-ink-muted">
             <tr>
-              <th className="w-[9%] px-3 py-3 sm:px-4">Трек</th>
-              <th className="w-[11%] px-3 py-3 sm:px-4">Клієнт</th>
+              <th className="w-[10%] px-3 py-3 sm:px-4">Трек</th>
+              <th className="w-[10%] px-3 py-3 sm:px-4">Клієнт</th>
               <th className="w-[10%] px-3 py-3 sm:px-4">Статус</th>
               <th className="w-[6%] px-3 py-3 sm:px-4">Км</th>
               <th className="w-[6%] px-3 py-3 sm:px-4">Вага</th>
@@ -199,17 +211,51 @@ export default function ShipmentsPage() {
               shipments.map((s) => (
                 <tr key={s.id} className="border-b border-slate-100 last:border-0">
                   <td className="px-3 py-3 align-middle font-mono text-xs font-medium text-ink sm:px-4">
-                    <span className="mx-auto block max-w-full truncate" title={s.tracking_code}>
-                      {s.tracking_code}
-                    </span>
+                    <div className="mx-auto flex max-w-full items-center justify-center gap-1">
+                      <span className="min-w-0 truncate" title={s.tracking_code}>
+                        {s.tracking_code}
+                      </span>
+                      <button
+                        type="button"
+                        className="inline-flex shrink-0 rounded-md border border-slate-200 bg-white p-1 text-ink-muted shadow-sm hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700"
+                        title={copiedShipmentId === s.id ? 'Скопійовано' : 'Копіювати трекінг-код'}
+                        aria-label={`Копіювати трекінг-код ${s.tracking_code}`}
+                        onClick={() => copyTrackingCode(s.id, s.tracking_code)}
+                      >
+                        {copiedShipmentId === s.id ? (
+                          <span className="block px-0.5 text-xs font-medium text-emerald-600" aria-hidden>
+                            ✓
+                          </span>
+                        ) : (
+                          <svg
+                            className="h-4 w-4"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            aria-hidden
+                          >
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
                   </td>
                   <td className="px-3 py-3 align-middle text-ink-muted sm:px-4">
                     <span className="mx-auto block max-w-full truncate" title={s.client_name}>
                       {s.client_name}
                     </span>
                   </td>
-                  <td className="px-3 py-3 align-middle text-ink-muted sm:px-4">
-                    <span className="mx-auto block max-w-full truncate">{statusLabel(s.status)}</span>
+                  <td className="px-3 py-3 align-middle sm:px-4">
+                    <span
+                      className={`mx-auto ${shipmentStatusBadgeClass(s.status)}`}
+                      title={shipmentStatusLabel(s.status)}
+                    >
+                      {shipmentStatusLabel(s.status)}
+                    </span>
                   </td>
                   <td className="px-3 py-3 align-middle text-ink-muted sm:px-4">
                     <span className="mx-auto block max-w-full truncate">{s.distance_km}</span>

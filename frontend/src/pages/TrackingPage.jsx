@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
+import { shipmentStatusBadgeClass } from '../constants/shipmentStatus.js';
+
 async function parseJson(res) {
   try {
     return await res.json();
@@ -93,7 +95,7 @@ export default function TrackingPage() {
         <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <p className="font-mono text-lg font-semibold text-ink">{data.tracking_code}</p>
-            <span className="rounded-full bg-brand-50 px-3 py-1 text-xs font-medium text-brand-800">
+            <span className={shipmentStatusBadgeClass(data.status)}>
               {data.status_label ?? data.status}
             </span>
           </div>
